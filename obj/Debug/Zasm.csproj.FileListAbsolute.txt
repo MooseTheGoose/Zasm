@@ -1,0 +1,6 @@
+C:\Users\s198\Zasm\bin\Debug\Zasm.exe.config
+C:\Users\s198\Zasm\bin\Debug\Zasm.exe
+C:\Users\s198\Zasm\bin\Debug\Zasm.pdb
+C:\Users\s198\Zasm\obj\Debug\Zasm.csprojAssemblyReference.cache
+C:\Users\s198\Zasm\obj\Debug\Zasm.exe
+C:\Users\s198\Zasm\obj\Debug\Zasm.pdb
