@@ -468,7 +468,12 @@ namespace Zasm
             }
         }
 
-        private void EvalADC(DTree argv, int argc)
+        /*
+         *  ADC, and SBC follow the same format
+         *  of encoding. They only have different
+         *  offsets.
+         */
+        private void EvalArithC(DTree argv, int argc, int npaircode, int regcode)
         {
             if (argc != 2) { EvalErr(); }
 
@@ -483,7 +488,7 @@ namespace Zasm
 
                     int pair = (int)((NormPairTree)arg2).normpair;
                     code.Add(0xED);
-                    code.Add((byte)(0x4A | pair << 4));
+                    code.Add((byte)(npaircode | pair << 4));
 
                     break;
                 case DTKind.REG:
@@ -493,17 +498,12 @@ namespace Zasm
                     {
                         case DTKind.REG:
                             int reg = (int)((RegTree)arg2).reg;
-                            code.Add((byte)(0x88 | reg));
+                            code.Add((byte)(regcode | reg));
                             break;
                         case DTKind.ADR:
                             AdrData data = new AdrData((AdrTree)arg2);
-                            if (!data.hasDisplacement
-                                && data.kind == DTKind.NORMPAIR
-                                && data.rep == (int)NormPair.HL)
-                            {
-                                code.Add(0x8E);
-                            }
-                            else if (data.hasDisplacement
+
+                            if (data.hasDisplacement
                                 && data.kind == DTKind.IPAIR)
                             {
                                 if (data.rep == (int)IPair.IX)
@@ -511,11 +511,15 @@ namespace Zasm
                                 else
                                 { code.Add(0xFD); }
 
-                                code.Add(0x8E);
                                 SImm8WarnOverflow(data.displacement);
                                 code.Add((byte)data.displacement);
                             }
-                            else { EvalErr(); }
+                            else if (data.hasDisplacement
+                                     || data.kind != DTKind.NORMPAIR
+                                     || data.rep != (int)NormPair.HL)
+                            { EvalErr(); }
+
+                            code.Add((byte)(regcode | 6));
                             break;
                         case DTKind.IREG:
                             IReg ireg = ((IRegTree)arg2).reg;
@@ -525,15 +529,15 @@ namespace Zasm
                             { code.Add(0xFD); }
 
                             if (ireg == IReg.IXH || ireg == IReg.IYH)
-                            { code.Add(0x8C); }
+                            { code.Add((byte)(regcode | 4)); }
                             else
-                            { code.Add(0x8D); }
+                            { code.Add((byte)(regcode | 5)); }
 
                             break;
                         case DTKind.IMM:
                             int imm = ((ImmTree)arg2).immediate;
                             Imm8WarnOverflow(imm);
-                            code.Add(0xCE);
+                            code.Add((byte)(regcode | 0x46));
                             code.Add((byte)imm);
                             break;
                         default:
@@ -547,7 +551,12 @@ namespace Zasm
             }
         }
 
-        private void EvalSUB(DTree argv, int argc)
+        /*
+         * SUB, XOR, OR, AND, and CP follow the same
+         * format of encoding. They only have different
+         * offsets.
+         */
+        private void EvalArith(DTree argv, int argc, int basecode)
         {
             if (argc != 1) { EvalErr(); }
 
@@ -557,7 +566,7 @@ namespace Zasm
             {
                 case DTKind.REG:
                     int reg = (int)((RegTree)arg).reg;
-                    code.Add((byte)(0x90 | reg));
+                    code.Add((byte)(basecode | reg));
                     break;
                 case DTKind.IREG:
                     IReg ireg = (IReg)((IRegTree)arg).reg;
@@ -568,9 +577,9 @@ namespace Zasm
                     { code.Add(0xFD); }
 
                     if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0x94); }
+                    { code.Add((byte)(basecode | 4)); }
                     else
-                    { code.Add(0x95); }
+                    { code.Add((byte)(basecode | 5)); }
 
                     break;
                 case DTKind.ADR:
@@ -585,161 +594,19 @@ namespace Zasm
                         { code.Add(0xFD); }
 
                         SImm8WarnOverflow(data.displacement);
-                        code.Add(0x96);
                         code.Add((byte)data.displacement);
                     }
-                    else if (!data.hasDisplacement
-                        && data.kind == DTKind.NORMPAIR
-                        && data.rep == (int)NormPair.HL)
-                    {
-                        code.Add(0x96);
-                    }
-                    else { EvalErr(); }
-                    break;
-                case DTKind.IMM:
-                    int imm = ((ImmTree)arg).immediate;
-                    SImm8WarnOverflow(imm);
-                    code.Add(0xD6);
-                    code.Add((byte)imm);
-                    break;
-                default:
-                    EvalErr();
-                    break;
-            }
-        }
-
-        private void EvalSBC(DTree argv, int argc)
-        {
-            if (argc != 2) { EvalErr(); }
-
-            DTree arg1 = argv, arg2 = argv.next;
-
-            switch (arg1.kind)
-            {
-                case DTKind.NORMPAIR:
-                    if (((NormPairTree)arg1).normpair != NormPair.HL
-                        || arg2.kind != DTKind.NORMPAIR)
+                    else if (data.hasDisplacement
+                        || data.kind != DTKind.NORMPAIR
+                        || data.rep != (int)NormPair.HL)
                     { EvalErr(); }
 
-                    int pair = (int)((NormPairTree)arg2).normpair;
-                    code.Add(0xED);
-                    code.Add((byte)(0x41 | pair << 4));
-
-                    break;
-                case DTKind.REG:
-                    if (((RegTree)arg1).reg != Register.A) { EvalErr(); }
-
-                    switch (arg2.kind)
-                    {
-                        case DTKind.REG:
-                            int reg = (int)((RegTree)arg2).reg;
-                            code.Add((byte)(0x98 | reg));
-                            break;
-                        case DTKind.ADR:
-                            AdrData data = new AdrData((AdrTree)arg2);
-                            if (!data.hasDisplacement
-                                && data.kind == DTKind.NORMPAIR
-                                && data.rep == (int)NormPair.HL)
-                            {
-                                code.Add(0x9E);
-                            }
-                            else if (data.hasDisplacement
-                                && data.kind == DTKind.IPAIR)
-                            {
-                                if (data.rep == (int)IPair.IX)
-                                { code.Add(0xDD); }
-                                else
-                                { code.Add(0xFD); }
-
-                                code.Add(0x9E);
-                                SImm8WarnOverflow(data.displacement);
-                                code.Add((byte)data.displacement);
-                            }
-                            else { EvalErr(); }
-                            break;
-                        case DTKind.IREG:
-                            IReg ireg = ((IRegTree)arg2).reg;
-                            if (ireg == IReg.IXH || ireg == IReg.IXL)
-                            { code.Add(0xDD); }
-                            else
-                            { code.Add(0xFD); }
-
-                            if (ireg == IReg.IXH || ireg == IReg.IYH)
-                            { code.Add(0x9C); }
-                            else
-                            { code.Add(0x9D); }
-
-                            break;
-                        case DTKind.IMM:
-                            int imm = ((ImmTree)arg2).immediate;
-                            Imm8WarnOverflow(imm);
-                            code.Add(0xDE);
-                            code.Add((byte)imm);
-                            break;
-                        default:
-                            EvalErr();
-                            break;
-                    }
-                    break;
-                default:
-                    EvalErr();
-                    break;
-            }
-        }
-
-        private void EvalAND(DTree argv, int argc)
-        {
-            if (argc != 1) { EvalErr(); }
-
-            DTree arg = argv;
-
-            switch (arg.kind)
-            {
-                case DTKind.REG:
-                    int reg = (int)((RegTree)arg).reg;
-                    code.Add((byte)(0xA0 | reg));
-                    break;
-                case DTKind.IREG:
-                    IReg ireg = (IReg)((IRegTree)arg).reg;
-
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xDD); }
-                    else
-                    { code.Add(0xFD); }
-
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xA4); }
-                    else
-                    { code.Add(0xA5); }
-
-                    break;
-                case DTKind.ADR:
-                    AdrData data = new AdrData((AdrTree)arg);
-                    if (data.hasDisplacement && data.kind == DTKind.IPAIR)
-                    {
-                        IPair pair = (IPair)data.rep;
-
-                        if (pair == IPair.IX)
-                        { code.Add(0xDD); }
-                        else
-                        { code.Add(0xFD); }
-
-                        SImm8WarnOverflow(data.displacement);
-                        code.Add(0xA6);
-                        code.Add((byte)data.displacement);
-                    }
-                    else if (!data.hasDisplacement
-                        && data.kind == DTKind.NORMPAIR
-                        && data.rep == (int)NormPair.HL)
-                    {
-                        code.Add(0xA6);
-                    }
-                    else { EvalErr(); }
+                    code.Add((byte)(basecode | 6));
                     break;
                 case DTKind.IMM:
                     int imm = ((ImmTree)arg).immediate;
                     SImm8WarnOverflow(imm);
-                    code.Add(0xE6);
+                    code.Add((byte)(basecode | 0x46));
                     code.Add((byte)imm);
                     break;
                 default:
@@ -748,187 +615,158 @@ namespace Zasm
             }
         }
 
-        private void EvalXOR(DTree argv, int argc)
+        /*
+         * RLC, RRC, RL, RR, SLA, SRA, SLL, and SRL all follow
+         * the same format of encoding. They only have
+         * different offsets.
+         */
+        private void EvalRotShift(DTree argv, int argc, int basecode)
         {
-            if (argc != 1) { EvalErr(); }
-
-            DTree arg = argv;
-
-            switch (arg.kind)
+            if (argc == 1)
             {
-                case DTKind.REG:
+                DTree arg = argv;
+
+                if (arg.kind == DTKind.REG)
+                {
                     int reg = (int)((RegTree)arg).reg;
-                    code.Add((byte)(0xA8 | reg));
-                    break;
-                case DTKind.IREG:
-                    IReg ireg = (IReg)((IRegTree)arg).reg;
 
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xDD); }
-                    else
-                    { code.Add(0xFD); }
-
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xAC); }
-                    else
-                    { code.Add(0xAD); }
-
-                    break;
-                case DTKind.ADR:
+                    code.Add(0xCB);
+                    code.Add((byte)(basecode | reg));
+                }
+                else if (arg.kind == DTKind.ADR)
+                {
                     AdrData data = new AdrData((AdrTree)arg);
+
                     if (data.hasDisplacement && data.kind == DTKind.IPAIR)
                     {
-                        IPair pair = (IPair)data.rep;
-
-                        if (pair == IPair.IX)
+                        if (data.rep == (int)IPair.IX)
                         { code.Add(0xDD); }
                         else
                         { code.Add(0xFD); }
 
                         SImm8WarnOverflow(data.displacement);
-                        code.Add(0xA6);
+                        code.Add(0xCB);
                         code.Add((byte)data.displacement);
+                        code.Add((byte)(basecode | 6));
                     }
-                    else if (!data.hasDisplacement
-                        && data.kind == DTKind.NORMPAIR
-                        && data.rep == (int)NormPair.HL)
+                    else if (!data.hasDisplacement && data.kind == DTKind.NORMPAIR)
                     {
-                        code.Add(0xAE);
+                        if (data.rep != (int)NormPair.HL) { EvalErr(); }
+
+                        code.Add((byte)(basecode | 6));
                     }
                     else { EvalErr(); }
-                    break;
-                case DTKind.IMM:
-                    int imm = ((ImmTree)arg).immediate;
-                    SImm8WarnOverflow(imm);
-                    code.Add(0xEE);
-                    code.Add((byte)imm);
-                    break;
-                default:
-                    EvalErr();
-                    break;
+                }
+                else
+                { EvalErr(); }
             }
+            else if (argc == 2)
+            {
+                DTree arg1 = argv, arg2 = argv.next;
+
+                if (arg1.kind != DTKind.ADR || arg2.kind != DTKind.REG)
+                { EvalErr(); }
+
+                AdrData data = new AdrData((AdrTree)arg1);
+                int reg = (int)((RegTree)arg2).reg;
+
+                if (!data.hasDisplacement || data.kind != DTKind.IPAIR)
+                { EvalErr(); }
+
+                if (data.rep == (int)IPair.IX)
+                { code.Add(0xDD); }
+                else
+                { code.Add(0xFD); }
+
+                SImm8WarnOverflow(data.displacement);
+
+                code.Add(0xCB);
+                code.Add((byte)data.displacement);
+                code.Add((byte)(basecode | reg));
+            }
+            else { EvalErr(); }
         }
 
-        private void EvalOR(DTree argv, int argc)
+        /*
+         *  BIT, SET, and RES all follow the same format of encoding.
+         *  They only have different offsets
+         */
+        private void EvalBit(DTree argv, int argc, int basecode)
         {
-            if (argc != 1) { EvalErr(); }
-
-            DTree arg = argv;
-
-            switch (arg.kind)
+            if (argc == 2)
             {
-                case DTKind.REG:
-                    int reg = (int)((RegTree)arg).reg;
-                    code.Add((byte)(0xB0 | reg));
-                    break;
-                case DTKind.IREG:
-                    IReg ireg = (IReg)((IRegTree)arg).reg;
+                DTree arg1 = argv, arg2 = argv.next;
 
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xDD); }
-                    else
-                    { code.Add(0xFD); }
+                if (arg1.kind != DTKind.IMM) { EvalErr(); }
 
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xB4); }
-                    else
-                    { code.Add(0xB5); }
+                int imm = ((ImmTree)arg1).immediate;
+                if (imm < 0 || imm > 7) { EvalErr(); }
 
-                    break;
-                case DTKind.ADR:
-                    AdrData data = new AdrData((AdrTree)arg);
+                if (arg2.kind == DTKind.REG)
+                {
+                    int reg = (int)((RegTree)arg2).reg;
+
+                    code.Add(0xCB);
+                    code.Add((byte)(basecode | imm << 3 | reg));
+                }
+                else if (arg2.kind == DTKind.ADR)
+                {
+                    AdrData data = new AdrData((AdrTree)arg2);
+
                     if (data.hasDisplacement && data.kind == DTKind.IPAIR)
                     {
-                        IPair pair = (IPair)data.rep;
-
-                        if (pair == IPair.IX)
+                        if (data.rep == (int)IPair.IX)
                         { code.Add(0xDD); }
                         else
                         { code.Add(0xFD); }
 
                         SImm8WarnOverflow(data.displacement);
-                        code.Add(0xB6);
+
+                        code.Add(0xCB);
                         code.Add((byte)data.displacement);
                     }
                     else if (!data.hasDisplacement
-                        && data.kind == DTKind.NORMPAIR
-                        && data.rep == (int)NormPair.HL)
+                        && data.kind == DTKind.NORMPAIR)
                     {
-                        code.Add(0xB6);
+                        if (data.rep != (int)NormPair.HL) { EvalErr(); }
+                        code.Add(0xCB);
                     }
                     else { EvalErr(); }
-                    break;
-                case DTKind.IMM:
-                    int imm = ((ImmTree)arg).immediate;
-                    SImm8WarnOverflow(imm);
-                    code.Add(0xF6);
-                    code.Add((byte)imm);
-                    break;
-                default:
-                    EvalErr();
-                    break;
+
+                    code.Add((byte)(basecode | imm << 3 | 6));
+                }
+                else { EvalErr(); }
             }
-        }
-
-        private void EvalCP(DTree argv, int argc)
-        {
-            if (argc != 1) { EvalErr(); }
-
-            DTree arg = argv;
-
-            switch (arg.kind)
+            else if (argc == 3)
             {
-                case DTKind.REG:
-                    int reg = (int)((RegTree)arg).reg;
-                    code.Add((byte)(0xB8 | reg));
-                    break;
-                case DTKind.IREG:
-                    IReg ireg = (IReg)((IRegTree)arg).reg;
+                DTree arg1 = argv; 
+                DTree arg2 = arg1.next;
+                DTree arg3 = arg2.next;
 
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xDD); }
-                    else
-                    { code.Add(0xFD); }
+                if (arg1.kind != DTKind.IMM
+                    || arg2.kind != DTKind.ADR
+                    || arg3.kind != DTKind.REG)
+                { EvalErr(); }
 
-                    if (ireg == IReg.IXH || ireg == IReg.IXL)
-                    { code.Add(0xBC); }
-                    else
-                    { code.Add(0xBD); }
+                int imm = ((ImmTree)arg1).immediate;
+                AdrData data = new AdrData((AdrTree)arg2);
+                int reg = (int)((RegTree)arg2).reg;
 
-                    break;
-                case DTKind.ADR:
-                    AdrData data = new AdrData((AdrTree)arg);
-                    if (data.hasDisplacement && data.kind == DTKind.IPAIR)
-                    {
-                        IPair pair = (IPair)data.rep;
+                if (imm < 0 || imm > 7) { EvalErr(); }
 
-                        if (pair == IPair.IX)
-                        { code.Add(0xDD); }
-                        else
-                        { code.Add(0xFD); }
+                if (!data.hasDisplacement || data.kind != DTKind.IPAIR) 
+                { EvalErr(); }
 
-                        SImm8WarnOverflow(data.displacement);
-                        code.Add(0xBE);
-                        code.Add((byte)data.displacement);
-                    }
-                    else if (!data.hasDisplacement
-                        && data.kind == DTKind.NORMPAIR
-                        && data.rep == (int)NormPair.HL)
-                    {
-                        code.Add(0xBE);
-                    }
-                    else { EvalErr(); }
-                    break;
-                case DTKind.IMM:
-                    int imm = ((ImmTree)arg).immediate;
-                    SImm8WarnOverflow(imm);
-                    code.Add(0xFE);
-                    code.Add((byte)imm);
-                    break;
-                default:
-                    EvalErr();
-                    break;
+                if (data.rep == (int)IPair.IX) { code.Add(0xDD); }
+                else                           { code.Add(0xFD); }
+
+                SImm8WarnOverflow(data.displacement);
+
+                code.Add(0xCB);
+                code.Add((byte)data.displacement);
+                code.Add((byte)(basecode | imm << 3 | reg));
             }
+            else { EvalErr(); }
         }
 
         /* ... Putting the C in CISC */
@@ -1433,28 +1271,28 @@ namespace Zasm
                     EvalLD(arguments, argc);
                     break;
                 case Nmemonic.CP:
-                    EvalCP(arguments, argc);
+                    EvalArith(arguments, argc, 0xB8);
                     break;
                 case Nmemonic.OR:
-                    EvalOR(arguments, argc);
+                    EvalArith(arguments, argc, 0xB0);
                     break;
                 case Nmemonic.XOR:
-                    EvalXOR(arguments, argc);
+                    EvalArith(arguments, argc, 0xA8);
                     break;
                 case Nmemonic.SUB:
-                    EvalSUB(arguments, argc);
+                    EvalArith(arguments, argc, 0x90);
                     break;
                 case Nmemonic.ADD:
                     EvalADD(arguments, argc);
                     break;
                 case Nmemonic.AND:
-                    EvalAND(arguments, argc);
+                    EvalArith(arguments, argc, 0xA0);
                     break;
                 case Nmemonic.ADC:
-                    EvalADC(arguments, argc);
+                    EvalArithC(arguments, argc, 0x4A, 0x88);
                     break;
                 case Nmemonic.SBC:
-                    EvalSBC(arguments, argc);
+                    EvalArithC(arguments, argc, 0x42, 0x98);
                     break;
             }
         }
