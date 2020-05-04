@@ -1,0 +1,6 @@
+/Users/yoyomoose/Zasm/bin/Release/Zasm.exe.config
+/Users/yoyomoose/Zasm/bin/Release/Zasm.exe
+/Users/yoyomoose/Zasm/bin/Release/Zasm.pdb
+/Users/yoyomoose/Zasm/obj/Release/Zasm.csproj.CoreCompileInputs.cache
+/Users/yoyomoose/Zasm/obj/Release/Zasm.exe
+/Users/yoyomoose/Zasm/obj/Release/Zasm.pdb

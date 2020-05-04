@@ -118,7 +118,7 @@ namespace Zasm
             }
         }
 
-        public static readonly string TestString = "add a, (ix + 20)";
+        public static readonly string TestString = "SLL (IX)";
         static void Main(string[] args)
         {
             Tokenizer t = new Tokenizer();

@@ -399,10 +399,10 @@ namespace Zasm
                         case DTKind.ADR:
                             data = new AdrData((AdrTree)arg2);
 
-                            if (data.hasDisplacement
-                                && data.kind == DTKind.IPAIR)
+                            if (data.kind == DTKind.IPAIR)
                             {
-                                int disp = data.displacement;
+                                int disp = data.hasDisplacement ?
+                                           0 : data.displacement;
                                 SImm8WarnOverflow(disp);
 
                                 if (data.rep == (int)IPair.IX)
@@ -503,16 +503,18 @@ namespace Zasm
                         case DTKind.ADR:
                             AdrData data = new AdrData((AdrTree)arg2);
 
-                            if (data.hasDisplacement
-                                && data.kind == DTKind.IPAIR)
+                            if (data.kind == DTKind.IPAIR)
                             {
+                                int disp = data.hasDisplacement ?
+                                           0 : data.displacement;
+
                                 if (data.rep == (int)IPair.IX)
                                 { code.Add(0xDD); }
                                 else
                                 { code.Add(0xFD); }
 
-                                SImm8WarnOverflow(data.displacement);
-                                code.Add((byte)data.displacement);
+                                SImm8WarnOverflow(disp);
+                                code.Add((byte)disp);
                             }
                             else if (data.hasDisplacement
                                      || data.kind != DTKind.NORMPAIR
@@ -584,8 +586,11 @@ namespace Zasm
                     break;
                 case DTKind.ADR:
                     AdrData data = new AdrData((AdrTree)arg);
-                    if (data.hasDisplacement && data.kind == DTKind.IPAIR)
+                    if (data.kind == DTKind.IPAIR)
                     {
+                        int disp = data.hasDisplacement ?
+                                   0 : data.displacement;
+
                         IPair pair = (IPair)data.rep;
 
                         if (pair == IPair.IX)
@@ -593,8 +598,8 @@ namespace Zasm
                         else
                         { code.Add(0xFD); }
 
-                        SImm8WarnOverflow(data.displacement);
-                        code.Add((byte)data.displacement);
+                        SImm8WarnOverflow(disp);
+                        code.Add((byte)disp);
                     }
                     else if (data.hasDisplacement
                         || data.kind != DTKind.NORMPAIR
@@ -637,12 +642,15 @@ namespace Zasm
                 {
                     AdrData data = new AdrData((AdrTree)arg);
 
-                    if (data.hasDisplacement && data.kind == DTKind.IPAIR)
+                    if (data.kind == DTKind.IPAIR)
                     {
                         if (data.rep == (int)IPair.IX)
                         { code.Add(0xDD); }
                         else
                         { code.Add(0xFD); }
+
+                        int disp = data.hasDisplacement ?
+                                   0 : data.displacement;
 
                         SImm8WarnOverflow(data.displacement);
                         code.Add(0xCB);
@@ -652,7 +660,7 @@ namespace Zasm
                     else if (!data.hasDisplacement && data.kind == DTKind.NORMPAIR)
                     {
                         if (data.rep != (int)NormPair.HL) { EvalErr(); }
-
+                        code.Add(0xCB);
                         code.Add((byte)(basecode | 6));
                     }
                     else { EvalErr(); }
@@ -670,7 +678,7 @@ namespace Zasm
                 AdrData data = new AdrData((AdrTree)arg1);
                 int reg = (int)((RegTree)arg2).reg;
 
-                if (!data.hasDisplacement || data.kind != DTKind.IPAIR)
+                if (data.kind != DTKind.IPAIR)
                 { EvalErr(); }
 
                 if (data.rep == (int)IPair.IX)
@@ -678,10 +686,13 @@ namespace Zasm
                 else
                 { code.Add(0xFD); }
 
-                SImm8WarnOverflow(data.displacement);
+                int disp = data.hasDisplacement ?
+                           0 : data.displacement;
+
+                SImm8WarnOverflow(disp);
 
                 code.Add(0xCB);
-                code.Add((byte)data.displacement);
+                code.Add((byte)disp);
                 code.Add((byte)(basecode | reg));
             }
             else { EvalErr(); }
@@ -713,17 +724,20 @@ namespace Zasm
                 {
                     AdrData data = new AdrData((AdrTree)arg2);
 
-                    if (data.hasDisplacement && data.kind == DTKind.IPAIR)
+                    if (data.kind == DTKind.IPAIR)
                     {
                         if (data.rep == (int)IPair.IX)
                         { code.Add(0xDD); }
                         else
                         { code.Add(0xFD); }
 
-                        SImm8WarnOverflow(data.displacement);
+                        int disp = data.hasDisplacement ?
+                                   0 : data.displacement;
+
+                        SImm8WarnOverflow(disp);
 
                         code.Add(0xCB);
-                        code.Add((byte)data.displacement);
+                        code.Add((byte)disp);
                     }
                     else if (!data.hasDisplacement
                         && data.kind == DTKind.NORMPAIR)
@@ -754,16 +768,19 @@ namespace Zasm
 
                 if (imm < 0 || imm > 7) { EvalErr(); }
 
-                if (!data.hasDisplacement || data.kind != DTKind.IPAIR) 
+                if (data.kind != DTKind.IPAIR) 
                 { EvalErr(); }
 
                 if (data.rep == (int)IPair.IX) { code.Add(0xDD); }
                 else                           { code.Add(0xFD); }
 
-                SImm8WarnOverflow(data.displacement);
+                int disp = data.hasDisplacement ?
+                           0 : data.displacement;
+
+                SImm8WarnOverflow(disp);
 
                 code.Add(0xCB);
-                code.Add((byte)data.displacement);
+                code.Add((byte)disp);
                 code.Add((byte)(basecode | imm << 3 | reg));
             }
             else { EvalErr(); }
@@ -791,38 +808,33 @@ namespace Zasm
             {
                 case DTKind.ADR:
                     data = new AdrData((AdrTree)arg1);
-
-                    if (data.hasDisplacement)
+                    if (data.kind == DTKind.IPAIR)
                     {
-                        if (data.kind == DTKind.IPAIR)
+                        if (data.rep == (int)IPair.IX)
+                        { code.Add(0xDD); }
+                        else if (data.rep == (int)IPair.IY)
+                        { code.Add(0xFD); }
+
+                        int disp = data.hasDisplacement ?
+                                   0 : data.displacement;
+
+                        SImm8WarnOverflow(data.displacement);
+
+                        if (arg2.kind == DTKind.REG)
                         {
-                            if (data.rep == (int)IPair.IX)
-                            { code.Add(0xDD); }
-                            else if (data.rep == (int)IPair.IY)
-                            { code.Add(0xFD); }
+                            reg = (int)((RegTree)arg2).reg;
+                            code.Add((byte)(0x70 | reg));
+                            code.Add((byte)data.displacement);
+                        }
+                        else if (arg2.kind == DTKind.IMM)
+                        {
+                            imm = ((ImmTree)arg2).immediate;
 
-                            SImm8WarnOverflow(data.displacement);
+                            Imm8WarnOverflow(imm);
 
-                            if (arg2.kind == DTKind.REG)
-                            {
-                                reg = (int)((RegTree)arg2).reg;
-                                code.Add((byte)(0x70 | reg));
-                                code.Add((byte)data.displacement);
-                            }
-                            else if (arg2.kind == DTKind.IMM)
-                            {
-                                imm = ((ImmTree)arg2).immediate;
-
-                                Imm8WarnOverflow(imm);
-
-                                code.Add(0x36);
-                                code.Add((byte)data.displacement);
-                                code.Add((byte)imm);
-                            }
-                            else
-                            {
-                                EvalErr();
-                            }
+                            code.Add(0x36);
+                            code.Add((byte)data.displacement);
+                            code.Add((byte)imm);
                         }
                         else
                         {
@@ -856,6 +868,12 @@ namespace Zasm
                             }
                             else if (arg2.kind == DTKind.IMM)
                             {
+                                int immed = ((ImmTree)arg2).immediate;
+
+                                Imm8WarnOverflow(immed);
+
+                                code.Add(0x36);
+                                code.Add((byte)immed);
                             }
                             else
                             {
@@ -886,7 +904,7 @@ namespace Zasm
                                     code.Add((byte)(0x34 | pair << 4));
                                 }
                             }
-                            else if(arg2.kind == DTKind.IPAIR)
+                            else if (arg2.kind == DTKind.IPAIR)
                             {
                                 pair = (int)((IPairTree)arg2).ipair;
 
@@ -969,21 +987,21 @@ namespace Zasm
                         {
                             IPair spair = (IPair)data.rep;
 
-                            if (!data.hasDisplacement)
-                            {
-                                EvalErr();
-                            }
+                            int disp = data.hasDisplacement ?
+                                       0 : data.displacement;
+
+                            SImm8WarnOverflow(disp);
 
                             if (spair == IPair.IX)
                             {
                                 code.Add(0xDD);
-                                code.Add((byte)(0x46 | reg1 << 3));
                             }
                             else if (spair == IPair.IY)
                             {
                                 code.Add(0xFD);
-                                code.Add((byte)(0x46 | reg1 << 3));
                             }
+                            code.Add((byte)(0x46 | reg1 << 3));
+                            code.Add((byte)disp);
                         }
                     }
                     else if (arg2.kind == DTKind.IREG)
@@ -1124,15 +1142,12 @@ namespace Zasm
 
                         imm = data.rep;
 
-                        if (imm > 0xFFFF || imm < -0x8000)
-                        {
-                            EvalErr();
-                        }
+                        Imm16WarnOverflow(imm);
 
                         code.Add(0x2A);
 
                         code.Add((byte)imm);
-                        code.Add((byte)(imm >> 8));
+                        code.Add((byte)((uint)imm >> 8));
                     }
                     else
                     {
@@ -1293,6 +1308,30 @@ namespace Zasm
                     break;
                 case Nmemonic.SBC:
                     EvalArithC(arguments, argc, 0x42, 0x98);
+                    break;
+                case Nmemonic.RLC:
+                    EvalRotShift(arguments, argc, 0);
+                    break;
+                case Nmemonic.RRC:
+                    EvalRotShift(arguments, argc, 0x8);
+                    break;
+                case Nmemonic.RL:
+                    EvalRotShift(arguments, argc, 0x10);
+                    break;
+                case Nmemonic.RR:
+                    EvalRotShift(arguments, argc, 0x18);
+                    break;
+                case Nmemonic.SLA:
+                    EvalRotShift(arguments, argc, 0x20);
+                    break;
+                case Nmemonic.SRA:
+                    EvalRotShift(arguments, argc, 0x28);
+                    break;
+                case Nmemonic.SLL:
+                    EvalRotShift(arguments, argc, 0x30);
+                    break;
+                case Nmemonic.SRL:
+                    EvalRotShift(arguments, argc, 0x40);
                     break;
             }
         }

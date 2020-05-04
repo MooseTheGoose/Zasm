@@ -260,7 +260,7 @@ namespace Zasm
         JP = 48, JR = 49, DJNZ = 50, CALL = 51, RET = 52,
         RETI = 53, RETN = 54, RST = 55, IN = 56, INI = 57,
         INIR = 58, IND = 59, INDR = 60, OUT = 61, OUTI = 62,
-        OUTIR = 63, OUTD = 64, OUTDR = 65, CP = 66
+        OUTIR = 63, OUTD = 64, OUTDR = 65, CP = 66, SLL = 67
     };
 
     public class NmemonicTree : DTree
@@ -277,7 +277,7 @@ namespace Zasm
             "RLD", "RRD", "BIT", "SET", "RES", "JP", "JR",
             "DJNZ", "CALL", "RET", "RETI", "RETN", "RST",
             "IN", "INI", "INIR", "IND", "INDR", "OUT",
-            "OUTI", "OUTIR", "OUTD", "OUTDR", "CP"
+            "OUTI", "OUTIR", "OUTD", "OUTDR", "CP", "SLL"
         };
 
         public Nmemonic nmemonic;
