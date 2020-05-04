@@ -866,7 +866,8 @@ namespace Zasm
                                     EvalErr();
                                 }
                             }
-                            else if (arg2.kind == DTKind.IMM)
+                            else if (arg2.kind == DTKind.IMM
+                                && data.rep == (int)NormPair.HL)
                             {
                                 int immed = ((ImmTree)arg2).immediate;
 
@@ -964,8 +965,8 @@ namespace Zasm
                             {
                                 code.Add((byte)(0x46 | reg1 << 3));
                             }
-                            else if (npair == NormPair.BC
-                                || npair == NormPair.DE
+                            else if ((npair == NormPair.BC
+                                || npair == NormPair.DE)
                                 && reg1 == (int)Register.A)
                             {
                                 code.Add((byte)(0x0A | (int)npair << 4));
