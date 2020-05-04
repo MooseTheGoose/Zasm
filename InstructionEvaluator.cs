@@ -69,103 +69,42 @@ namespace Zasm
     {
         public List<byte> code;
 
-        private void EvalRRA(DTree argv, int argc)
+        /*
+         *  All nmemonics with no arguments which are not
+         *  prefixed with 0xED follow this format
+         */
+        private void EvalNoArgs(int argc, int opcode)
         {
             if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0x1F);
+            { EvalErr(); }
+            code.Add((byte)opcode);
         }
 
-        private void EvalRRCA(DTree argv, int argc)
+        private void EvalNoArgsED(int argc, int opcode)
         {
             if (argc != 0)
-            {
-                EvalErr();
-                code.Add(0xF);
-            }
+            { EvalErr(); }
+            code.Add(0xED);
+            code.Add((byte)opcode);
         }
 
-        private void EvalRLA(DTree argv, int argc)
+        private void EvalRET(DTree argv, int argc)
         {
-            if (argc != 0)
+            if (argc == 0)
             {
-                EvalErr();
+                code.Add(0xC9);
             }
-            code.Add(0x17);
-        }
+            else if (argc == 1)
+            {
+                DTree arg = argv;
 
-        private void EvalRLCA(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0x07);
-        }
+                if (arg.kind != DTKind.CONDITION) { EvalErr(); }
 
-        private void EvalNOP(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0);
-        }
+                int cond = (int)((ConditionTree)arg).cond;
 
-        private void EvalDAA(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
+                code.Add((byte)(0xC0 | cond << 3));
             }
-            code.Add(0x27);
-        }
-
-        private void EvalSCF(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0x37);
-        }
-
-        private void EvalCPL(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0x3F);
-        }
-
-        private void EvalCCF(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0x4F);
-        }
-
-        private void EvalLDI(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0xA0);
-        }
-
-        private void EvalEXX(DTree argv, int argc)
-        {
-            if (argc != 0)
-            {
-                EvalErr();
-            }
-            code.Add(0xD9);
+            else { EvalErr(); }
         }
 
         private void EvalJR(DTree argv, int argc)
@@ -278,7 +217,6 @@ namespace Zasm
             }
         }
 
-        /* TO-DO: Include IPairs */
         private void EvalPUSH(DTree argv, int argc)
         {
             if (argc != 1)
@@ -306,13 +244,20 @@ namespace Zasm
                     else { code.Add(0xF5); }
                     break;
                 case DTKind.IPAIR:
+                    IPair ipair = ((IPairTree)arg).ipair;
+                    if (ipair == IPair.IX)
+                    { code.Add(0xDD); }
+                    else
+                    { code.Add(0xFD); }
+
+                    code.Add(0xE5);
+                    break;
                 default:
                     EvalErr();
                     break;
             }
         }
 
-        /* TO-DO: Include IPairs */
         private void EvalPOP(DTree argv, int argc)
         {
             if (argc != 1)
@@ -340,6 +285,14 @@ namespace Zasm
                     else { code.Add(0xF1); }
                     break;
                 case DTKind.IPAIR:
+                    IPair ipair = ((IPairTree)arg).ipair;
+                    if (ipair == IPair.IX)
+                    { code.Add(0xDD); }
+                    else
+                    { code.Add(0xFD); }
+
+                    code.Add(0xE7);
+                    break;
                 default:
                     EvalErr();
                     break;
@@ -1275,7 +1228,7 @@ namespace Zasm
             switch (nmemonic.nmemonic)
             {
                 case Nmemonic.RRA:
-                    EvalRRA(arguments, argc);
+                    EvalNoArgs(argc, 0x1F);
                     break;
                 case Nmemonic.PUSH:
                     EvalPUSH(arguments, argc);
@@ -1333,6 +1286,30 @@ namespace Zasm
                     break;
                 case Nmemonic.SRL:
                     EvalRotShift(arguments, argc, 0x40);
+                    break;
+                case Nmemonic.DAA:
+                    EvalNoArgs(argc, 0x27);
+                    break;
+                case Nmemonic.CCF:
+                    EvalNoArgs(argc, 0x3F);
+                    break;
+                case Nmemonic.EXX:
+                    EvalNoArgs(argc, 0xD9);
+                    break;
+                case Nmemonic.JR:
+                    EvalJR(arguments, argc);
+                    break;
+                case Nmemonic.JP:
+                    EvalJP(arguments, argc);
+                    break;
+                case Nmemonic.LDI:
+                    EvalNoArgsED(argc, 0xA0);
+                    break;
+                case Nmemonic.RET:
+                    EvalRET(arguments, argc);
+                    break;
+                case Nmemonic.RETI:
+                    EvalNoArgsED(argc, 0x4D);
                     break;
             }
         }
