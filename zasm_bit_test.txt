@@ -29,4 +29,5 @@ RRC (IX), B
 RL  (IX + 20), L
 BIT 0, (IX), B
 SLA (IX)
+SLA (IY)
 RES 1, (IX)

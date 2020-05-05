@@ -1,0 +1,256 @@
+RLC (IX), B
+RLC (IX), C
+RLC (IX), D
+RLC (IX), E
+RLC (IX), H
+RLC (IX), L
+RLC (IX)
+RLC (IX), A
+RRC (IX), B
+RRC (IX), C
+RRC (IX), D
+RRC (IX), E
+RRC (IX), H
+RRC (IX), L
+RRC (IX)
+RRC (IX), A
+RL (IX), B
+RL (IX), C
+RL (IX), D
+RL (IX), E
+RL (IX), H
+RL (IX), L
+RL (IX)
+RL (IX), A
+RR (IX), B
+RR (IX), C
+RR (IX), D
+RR (IX), E
+RR (IX), H
+RR (IX), L
+RR (IX)
+RR (IX), A
+SLA (IX), B
+SLA (IX), C
+SLA (IX), D
+SLA (IX), E
+SLA (IX), H
+SLA (IX), L
+SLA (IX)
+SLA (IX), A
+SRA (IX), B
+SRA (IX), C
+SRA (IX), D
+SRA (IX), E
+SRA (IX), H
+SRA (IX), L
+SRA (IX)
+SRA (IX), A
+SLL (IX), B
+SLL (IX), C
+SLL (IX), D
+SLL (IX), E
+SLL (IX), H
+SLL (IX), L
+SLL (IX)
+SLL (IX), A
+SRL (IX), B
+SRL (IX), C
+SRL (IX), D
+SRL (IX), E
+SRL (IX), H
+SRL (IX), L
+SRL (IX)
+SRL (IX), A
+BIT 0,  (IX), B
+BIT 0,  (IX), C
+BIT 0,  (IX), D
+BIT 0,  (IX), E
+BIT 0,  (IX), H
+BIT 0,  (IX), L
+BIT 0,  (IX)
+BIT 0,  (IX), A
+BIT 1,  (IX), B
+BIT 1,  (IX), C
+BIT 1,  (IX), D
+BIT 1,  (IX), E
+BIT 1,  (IX), H
+BIT 1,  (IX), L
+BIT 1,  (IX)
+BIT 1,  (IX), A
+BIT 2,  (IX), B
+BIT 2,  (IX), C
+BIT 2,  (IX), D
+BIT 2,  (IX), E
+BIT 2,  (IX), H
+BIT 2,  (IX), L
+BIT 2,  (IX)
+BIT 2,  (IX), A
+BIT 3,  (IX), B
+BIT 3,  (IX), C
+BIT 3,  (IX), D
+BIT 3,  (IX), E
+BIT 3,  (IX), H
+BIT 3,  (IX), L
+BIT 3,  (IX)
+BIT 3,  (IX), A
+BIT 4,  (IX), B
+BIT 4,  (IX), C
+BIT 4,  (IX), D
+BIT 4,  (IX), E
+BIT 4,  (IX), H
+BIT 4,  (IX), L
+BIT 4,  (IX)
+BIT 4,  (IX), A
+BIT 5,  (IX), B
+BIT 5,  (IX), C
+BIT 5,  (IX), D
+BIT 5,  (IX), E
+BIT 5,  (IX), H
+BIT 5,  (IX), L
+BIT 5,  (IX)
+BIT 5,  (IX), A
+BIT 6,  (IX), B
+BIT 6,  (IX), C
+BIT 6,  (IX), D
+BIT 6,  (IX), E
+BIT 6,  (IX), H
+BIT 6,  (IX), L
+BIT 6,  (IX)
+BIT 6,  (IX), A
+BIT 7,  (IX), B
+BIT 7,  (IX), C
+BIT 7,  (IX), D
+BIT 7,  (IX), E
+BIT 7,  (IX), H
+BIT 7,  (IX), L
+BIT 7,  (IX)
+BIT 7,  (IX), A
+RES 0,  (IX), B
+RES 0,  (IX), C
+RES 0,  (IX), D
+RES 0,  (IX), E
+RES 0,  (IX), H
+RES 0,  (IX), L
+RES 0,  (IX)
+RES 0,  (IX), A
+RES 1,  (IX), B
+RES 1,  (IX), C
+RES 1,  (IX), D
+RES 1,  (IX), E
+RES 1,  (IX), H
+RES 1,  (IX), L
+RES 1,  (IX)
+RES 1,  (IX), A
+RES 2,  (IX), B
+RES 2,  (IX), C
+RES 2,  (IX), D
+RES 2,  (IX), E
+RES 2,  (IX), H
+RES 2,  (IX), L
+RES 2,  (IX)
+RES 2,  (IX), A
+RES 3,  (IX), B
+RES 3,  (IX), C
+RES 3,  (IX), D
+RES 3,  (IX), E
+RES 3,  (IX), H
+RES 3,  (IX), L
+RES 3,  (IX)
+RES 3,  (IX), A
+RES 4,  (IX), B
+RES 4,  (IX), C
+RES 4,  (IX), D
+RES 4,  (IX), E
+RES 4,  (IX), H
+RES 4,  (IX), L
+RES 4,  (IX)
+RES 4,  (IX), A
+RES 5,  (IX), B
+RES 5,  (IX), C
+RES 5,  (IX), D
+RES 5,  (IX), E
+RES 5,  (IX), H
+RES 5,  (IX), L
+RES 5,  (IX)
+RES 5,  (IX), A
+RES 6,  (IX), B
+RES 6,  (IX), C
+RES 6,  (IX), D
+RES 6,  (IX), E
+RES 6,  (IX), H
+RES 6,  (IX), L
+RES 6,  (IX)
+RES 6,  (IX), A
+RES 7,  (IX), B
+RES 7,  (IX), C
+RES 7,  (IX), D
+RES 7,  (IX), E
+RES 7,  (IX), H
+RES 7,  (IX), L
+RES 7,  (IX)
+RES 7,  (IX), A
+SET 0,  (IX), B
+SET 0,  (IX), C
+SET 0,  (IX), D
+SET 0,  (IX), E
+SET 0,  (IX), H
+SET 0,  (IX), L
+SET 0,  (IX)
+SET 0,  (IX), A
+SET 1,  (IX), B
+SET 1,  (IX), C
+SET 1,  (IX), D
+SET 1,  (IX), E
+SET 1,  (IX), H
+SET 1,  (IX), L
+SET 1,  (IX)
+SET 1,  (IX), A
+SET 2,  (IX), B
+SET 2,  (IX), C
+SET 2,  (IX), D
+SET 2,  (IX), E
+SET 2,  (IX), H
+SET 2,  (IX), L
+SET 2,  (IX)
+SET 2,  (IX), A
+SET 3,  (IX), B
+SET 3,  (IX), C
+SET 3,  (IX), D
+SET 3,  (IX), E
+SET 3,  (IX), H
+SET 3,  (IX), L
+SET 3,  (IX)
+SET 3,  (IX), A
+SET 4,  (IX), B
+SET 4,  (IX), C
+SET 4,  (IX), D
+SET 4,  (IX), E
+SET 4,  (IX), H
+SET 4,  (IX), L
+SET 4,  (IX)
+SET 4,  (IX), A
+SET 5,  (IX), B
+SET 5,  (IX), C
+SET 5,  (IX), D
+SET 5,  (IX), E
+SET 5,  (IX), H
+SET 5,  (IX), L
+SET 5,  (IX)
+SET 5,  (IX), A
+SET 6,  (IX), B
+SET 6,  (IX), C
+SET 6,  (IX), D
+SET 6,  (IX), E
+SET 6,  (IX), H
+SET 6,  (IX), L
+SET 6,  (IX)
+SET 6,  (IX), A
+SET 7,  (IX), B
+SET 7,  (IX), C
+SET 7,  (IX), D
+SET 7,  (IX), E
+SET 7,  (IX), H
+SET 7,  (IX), L
+SET 7,  (IX)
+SET 7,  (IX), A

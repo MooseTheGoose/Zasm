@@ -260,7 +260,7 @@ namespace Zasm
         JP = 48, JR = 49, DJNZ = 50, CALL = 51, RET = 52,
         RETI = 53, RETN = 54, RST = 55, IN = 56, INI = 57,
         INIR = 58, IND = 59, INDR = 60, OUT = 61, OUTI = 62,
-        OUTIR = 63, OUTD = 64, OUTDR = 65, CP = 66, SLL = 67,
+        OTIR = 63, OUTD = 64, OTDR = 65, CP = 66, SLL = 67,
     };
 
     public class NmemonicTree : DTree
@@ -277,7 +277,7 @@ namespace Zasm
             "RLD", "RRD", "BIT", "SET", "RES", "JP", "JR",
             "DJNZ", "CALL", "RET", "RETI", "RETN", "RST",
             "IN", "INI", "INIR", "IND", "INDR", "OUT",
-            "OUTI", "OUTIR", "OUTD", "OUTDR", "CP", "SLL",
+            "OUTI", "OTIR", "OUTD", "OTDR", "CP", "SLL",
         };
 
         public static readonly string[] ConditionalNmemonics =
@@ -316,7 +316,7 @@ namespace Zasm
 
     public class AdrTree : DTree
     {
-        public AdrTree(Token[] adrtokens, int startindex)
+        public bool FormAdrTree(Token[] adrtokens, int startindex)
         {
             kind = DTKind.ADR;
 
@@ -350,12 +350,12 @@ namespace Zasm
                 }
                 else
                 {
-                    SyntaxErr();
+                    return SyntaxErr();
                 }
 
                 currchild = this.children;
 
-                if (adrtokens.Length == 3)
+                if (adrtokens.Length == 3 && currchild.kind == DTKind.IPAIR)
                 {
                     curtoken = adrtokens[1];
                     Token numbertoken = adrtokens[2];
@@ -368,7 +368,7 @@ namespace Zasm
 
                         if (op != OperatorKind.PLUS && op != OperatorKind.MINUS)
                         {
-                            SyntaxErr();
+                            return SyntaxErr();
                         }
 
                         tempchild = new OperatorTree(op);
@@ -381,9 +381,10 @@ namespace Zasm
                 }
                 else if (adrtokens.Length != 1)
                 {
-                    SyntaxErr();
+                    return SyntaxErr();
                 }
 
+                return true;
             }
             else if (curtoken.id == TokenKind.NUMBER)
             {
@@ -391,13 +392,15 @@ namespace Zasm
 
                 if (adrtokens.Length != 1)
                 {
-                    SyntaxErr();
+                    return SyntaxErr();
                 }
             }
             else 
             {
-                SyntaxErr();
+                return SyntaxErr();
             }
+
+            return true;
         }
     }
 
@@ -412,7 +415,7 @@ namespace Zasm
          * Method assumes preprocessor came
          * in and dealt with labels and directives.
          */
-        public void Derive(Token[] tokens)
+        public bool Derive(Token[] tokens)
         {
             DTree curchild = null, tempchild = null;
             Token curtoken;
@@ -423,12 +426,12 @@ namespace Zasm
             next = null;
             children = null;
 
-            if (tokens.Length == 0) return;
+            if (tokens.Length == 0) return true;
 
             curtoken = tokens[0];
             if (curtoken.id != TokenKind.IDENTIFIER)
             {
-                SyntaxErr();
+                return SyntaxErr();
             }
 
             iden = ((IdentifierToken)curtoken).identifier.ToUpper();
@@ -441,7 +444,7 @@ namespace Zasm
             }
             else
             {
-                SyntaxErr();
+                return SyntaxErr();
             }
 
 
@@ -493,8 +496,7 @@ namespace Zasm
 
                         else
                         {
-
-                            SyntaxErr();
+                            return SyntaxErr();
                         }
 
                         curchild.next = tempchild;
@@ -529,19 +531,39 @@ namespace Zasm
                                 }
                                 if (i >= tokens.Length)
                                 {
-                                    SyntaxErr();
+                                    return SyntaxErr();
                                 }
                                 adrtokens = new Token[i-start-1];
                                 Array.Copy(tokens, start+1, 
                                     adrtokens, 0, adrtokens.Length);
-                                tempchild = new AdrTree(adrtokens, start + 1);
+                                tempchild = new AdrTree();
+                                bool success = ((AdrTree)tempchild).
+                                               FormAdrTree(adrtokens, start + 1);
+                                if(!success) { return false; }
                                 curchild.next = tempchild;
                                 curchild = tempchild;
                                 i++;
                                 break;
-                            default:
-                                SyntaxErr();
+                            case OperatorKind.PLUS:
+                                if (i >= tokens.Length - 1) { return SyntaxErr(); }
+                                Token numtokenadd = tokens[i + 1];
+                                if (numtokenadd.id != TokenKind.NUMBER) { return SyntaxErr(); }
+                                tempchild = new ImmTree(((NumberToken)numtokenadd).number);
+                                curchild.next = tempchild;
+                                curchild = tempchild;
+                                i += 2;
                                 break;
+                            case OperatorKind.MINUS:
+                                if (i >= tokens.Length - 1) { return SyntaxErr(); }
+                                Token numtokensub = tokens[i + 1];
+                                if (numtokensub.id != TokenKind.NUMBER) { return SyntaxErr(); }
+                                tempchild = new ImmTree(-((NumberToken)numtokensub).number);
+                                curchild.next = tempchild;
+                                curchild = tempchild;
+                                i += 2;
+                                break;
+                            default:
+                                return SyntaxErr();
                         }
                         break;
                     default:
@@ -554,15 +576,17 @@ namespace Zasm
                     if (curtoken.id != TokenKind.OPERATOR ||
                         ((OperatorToken)curtoken).op != OperatorKind.COMMA)
                     {
-                        SyntaxErr();
+                        return SyntaxErr();
                     }
                     i++;
                     if (i >= tokens.Length)
                     {
-                        SyntaxErr();
+                        return SyntaxErr();
                     }
                 }
             }
+
+            return true;
         }
     }
 }

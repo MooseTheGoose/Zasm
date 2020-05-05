@@ -31,8 +31,8 @@ namespace Zasm
                 case DTKind.NORMPAIR:
                     rep = (int)((NormPairTree)current).normpair;
                     break;
-                case DTKind.SPECPAIR:
-                    rep = (int)((SpecPairTree)current).specpair;
+                case DTKind.IPAIR:
+                    rep = (int)((IPairTree)current).ipair;
                     break;
                 case DTKind.IMM:
                     rep = ((ImmTree)current).immediate;
@@ -42,6 +42,7 @@ namespace Zasm
             current = current.next;
             if (current != null)
             {
+                System.Diagnostics.Debug.Assert(kind == DTKind.IPAIR);
                 System.Diagnostics.Debug.Assert(current.kind == DTKind.OPERATOR);
 
                 OperatorTree op = (OperatorTree)current;
@@ -73,22 +74,24 @@ namespace Zasm
          *  All nmemonics with no arguments which are not
          *  prefixed with 0xED follow this format
          */
-        private void EvalNoArgs(int argc, int opcode)
+        private bool EvalNoArgs(int argc, int opcode)
         {
             if (argc != 0)
-            { EvalErr(); }
+            { return EvalErr(); }
             code.Add((byte)opcode);
+            return true;
         }
 
-        private void EvalNoArgsED(int argc, int opcode)
+        private bool EvalNoArgsED(int argc, int opcode)
         {
             if (argc != 0)
-            { EvalErr(); }
+            { return EvalErr(); }
             code.Add(0xED);
             code.Add((byte)opcode);
+            return true;
         }
 
-        private void EvalRET(DTree argv, int argc)
+        private bool EvalRET(DTree argv, int argc)
         {
             if (argc == 0)
             {
@@ -98,22 +101,23 @@ namespace Zasm
             {
                 DTree arg = argv;
 
-                if (arg.kind != DTKind.CONDITION) { EvalErr(); }
+                if (arg.kind != DTKind.CONDITION) { return EvalErr(); }
 
                 int cond = (int)((ConditionTree)arg).cond;
 
                 code.Add((byte)(0xC0 | cond << 3));
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+            return true;
         }
 
-        private void EvalCALL(DTree argv, int argc)
+        private bool EvalCALL(DTree argv, int argc)
         {
             if (argc == 1)
             {
                 DTree arg = argv;
 
-                if (arg.kind != DTKind.IMM) { EvalErr(); }
+                if (arg.kind != DTKind.IMM) { return EvalErr(); }
 
                 int imm = ((ImmTree)arg).immediate;
 
@@ -128,7 +132,7 @@ namespace Zasm
 
                 if (arg1.kind != DTKind.CONDITION 
                     || arg2.kind != DTKind.IMM)
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 int cond = (int)((ConditionTree)arg1).cond;
                 int imm = ((ImmTree)arg2).immediate;
@@ -139,49 +143,53 @@ namespace Zasm
                 code.Add((byte)imm);
                 code.Add((byte)((uint)imm >> 8));
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+
+            return true;
         }
 
-        private void EvalRST(DTree argv, int argc)
+        private bool EvalRST(DTree argv, int argc)
         {
-            if (argc != 1) { EvalErr(); }
+            if (argc != 1) { return EvalErr(); }
 
             DTree arg = argv;
 
-            if (arg.kind != DTKind.IMM) { EvalErr(); }
+            if (arg.kind != DTKind.IMM) { return EvalErr(); }
 
             int imm = ((ImmTree)arg).immediate;
-            if ((imm & ~0x38) != 0) { EvalErr(); }
+            if ((imm & ~0x38) != 0) { return EvalErr(); }
 
             code.Add((byte)(0xC7 | imm));
+
+            return true;
         }
 
-        private void EvalEX(DTree argv, int argc)
+        private bool EvalEX(DTree argv, int argc)
         {
-            if (argc != 2) { EvalErr(); }
+            if (argc != 2) { return EvalErr(); }
 
             DTree arg1 = argv, arg2 = argv.next;
 
             switch (arg1.kind)
             {
                 case DTKind.SPECPAIR:
-                    if (arg2.kind != DTKind.SPECPAIR) { EvalErr(); }
+                    if (arg2.kind != DTKind.SPECPAIR) { return EvalErr(); }
                     SpecPair sreg1 = ((SpecPairTree)arg1).specpair,
                              sreg2 = ((SpecPairTree)arg2).specpair;
 
                     if (sreg1 != SpecPair.AF
                         || sreg2 != SpecPair.AFSHADOW)
-                    { EvalErr(); }
+                    { return EvalErr(); }
                     code.Add(0x08);
                     break;
                 case DTKind.NORMPAIR:
-                    if (arg2.kind != DTKind.NORMPAIR) { EvalErr(); }
+                    if (arg2.kind != DTKind.NORMPAIR) { return EvalErr(); }
                     NormPair npair1 = ((NormPairTree)arg1).normpair,
                              npair2 = ((NormPairTree)arg2).normpair;
 
                     if (npair1 != NormPair.DE
                         || npair2 != NormPair.HL)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     code.Add(0xEB);
                     break;
@@ -190,7 +198,7 @@ namespace Zasm
                     if (data.hasDisplacement
                         || data.kind != DTKind.NORMPAIR
                         || data.rep != (int)NormPair.SP)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     if (arg2.kind == DTKind.NORMPAIR
                         && ((NormPairTree)arg2).normpair
@@ -206,30 +214,32 @@ namespace Zasm
 
                         code.Add(0xE3);
                     }
-                    else { EvalErr(); }
+                    else { return EvalErr(); }
                     break;
                 default:
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
-        private void EvalOUT(DTree argv, int argc)
+        private bool EvalOUT(DTree argv, int argc)
         {
-            if (argc != 2) { EvalErr(); }
+            if (argc != 2) { return EvalErr(); }
 
             DTree arg1 = argv, arg2 = argv.next;
 
-            if (arg1.kind != DTKind.ADR) { EvalErr(); }
+            if (arg1.kind != DTKind.ADR) { return EvalErr(); }
 
             AdrData data = new AdrData((AdrTree)arg1);
 
-            if (data.hasDisplacement) { EvalErr(); }
+            if (data.hasDisplacement) { return EvalErr(); }
 
             if (data.kind == DTKind.IMM)
             {
                 if (arg2.kind != DTKind.REG
                     || ((RegTree)arg2).reg != Register.A)
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 int imm = data.rep;
                 Imm8WarnOverflow(imm);
@@ -238,40 +248,42 @@ namespace Zasm
             }
             else if (data.kind == DTKind.REG)
             {
-                if (data.rep != (int)Register.C) { EvalErr(); }
+                if (data.rep != (int)Register.C) { return EvalErr(); }
+                
+                code.Add(0xED);
 
                 if (arg2.kind == DTKind.REG)
                 {
                     int reg = (int)((RegTree)arg2).reg;
-
                     code.Add((byte)(0x41 | reg << 3));
                 }
                 else if (arg2.kind == DTKind.IMM)
                 {
                     int imm = ((ImmTree)arg2).immediate;
-                    if (imm != 0) { EvalErr(); }
-
+                    if (imm != 0) { return EvalErr(); }
                     code.Add(0x71);
                 }
-                else { EvalErr(); }
+                else { return EvalErr(); }
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+
+            return true;
         }
 
-        private void EvalIN(DTree argv, int argc)
+        private bool EvalIN(DTree argv, int argc)
         {
             if (argc == 1)
             {
                 DTree arg = argv;
 
-                if (arg.kind != DTKind.ADR) { EvalErr(); }
+                if (arg.kind != DTKind.ADR) { return EvalErr(); }
 
                 AdrData data = new AdrData((AdrTree)arg);
 
                 if (data.hasDisplacement
                     || data.kind != DTKind.REG
                     || data.rep != (int)Register.C) 
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 code.Add(0xED);
                 code.Add(0x70);
@@ -280,17 +292,17 @@ namespace Zasm
             {
                 DTree arg1 = argv, arg2 = argv.next;
 
-                if (arg2.kind != DTKind.ADR) { EvalErr(); }
+                if (arg2.kind != DTKind.ADR) { return EvalErr(); }
 
                 AdrData data = new AdrData((AdrTree)arg2);
 
-                if (data.hasDisplacement) { EvalErr(); }
+                if (data.hasDisplacement) { return EvalErr(); }
 
                 if (data.kind == DTKind.IMM)
                 {
                     if (arg1.kind != DTKind.REG
                         || ((RegTree)arg1).reg != Register.A)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     int imm = data.rep;
                     Imm8WarnOverflow(imm);
@@ -302,42 +314,48 @@ namespace Zasm
                     && data.rep == (int)Register.C)
                 {
                     
-                    if (arg1.kind != DTKind.REG) { EvalErr(); }
+                    if (arg1.kind != DTKind.REG) { return EvalErr(); }
                     int reg = (int)((RegTree)arg1).reg;
 
                     code.Add(0xED);
                     code.Add((byte)(0x40 | reg << 3));
                 }
-                else { EvalErr(); }
+                else { return EvalErr(); }
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+
+            return true;
         }
 
-        private void EvalIM(DTree argv, int argc)
+        private bool EvalIM(DTree argv, int argc)
         {
-            if (argc != 1) { EvalErr(); }
+            if (argc != 1) { return EvalErr(); }
 
             DTree arg = argv;
-            if (arg.kind != DTKind.IMM) { EvalErr(); }
+            if (arg.kind != DTKind.IMM) { return EvalErr(); }
 
             int imm = ((ImmTree)arg).immediate;
 
-            if (imm != 0 && imm != 1) { EvalErr(); }
+            if (imm != 0 && imm != 1
+                && imm != 2) { return EvalErr(); }
 
             code.Add(0xED);
 
-            if (imm == 0) { code.Add(0x46); }
-            else          { code.Add(0x56); }
+            if (imm == 0)      { code.Add(0x46); }
+            else if (imm == 2) { code.Add(0x5E); }
+            else               { code.Add(0x56); }
+
+            return true;
         }
 
-        private void EvalJR(DTree argv, int argc)
+        private bool EvalJR(DTree argv, int argc)
         {
             if (argc == 1)
             {
                 DTree dtree = argv;
                 if (dtree.kind != DTKind.IMM)
                 {
-                    EvalErr();
+                    return EvalErr();
 
                 }
                 int imm = ((ImmTree)dtree).immediate;
@@ -353,7 +371,7 @@ namespace Zasm
                 if (condtree.kind != DTKind.CONDITION
                     || immtree.kind != DTKind.IMM)
                 {
-                    EvalErr();
+                    return EvalErr();
                 }
 
                 int cond = (int)((ConditionTree)condtree).cond;
@@ -361,7 +379,7 @@ namespace Zasm
 
                 if (cond > (int)Condition.C)
                 {
-                    EvalErr();
+                    return EvalErr();
                 }
 
                 SImm8WarnOverflow(imm);
@@ -371,26 +389,30 @@ namespace Zasm
             }
             else
             {
-                EvalErr();
+                return EvalErr();
             }
+
+            return true;
         }
 
-        private void EvalDJNZ(DTree argv, int argc)
+        private bool EvalDJNZ(DTree argv, int argc)
         {
-            if (argc != 1) { EvalErr(); }
+            if (argc != 1) { return EvalErr(); }
 
             DTree arg = argv;
 
-            if (arg.kind != DTKind.IMM) { EvalErr(); }
+            if (arg.kind != DTKind.IMM) { return EvalErr(); }
             int imm = ((ImmTree)arg).immediate;
 
             SImm8WarnOverflow(imm);
 
             code.Add(0x10);
             code.Add((byte)imm);
+
+            return true;
         }
 
-        private void EvalJP(DTree argv, int argc)
+        private bool EvalJP(DTree argv, int argc)
         {
             if (argc == 1)
             {
@@ -410,7 +432,7 @@ namespace Zasm
 
                     if (data.hasDisplacement)
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
 
                     if (data.kind == DTKind.IPAIR)
@@ -423,12 +445,12 @@ namespace Zasm
                     else if (data.kind != DTKind.NORMPAIR
                         || data.rep != (int)NormPair.HL)
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
 
                     code.Add(0xE9);
                 }
-                else { EvalErr(); }
+                else { return EvalErr(); }
             }
             else if (argc == 2)
             {
@@ -437,7 +459,7 @@ namespace Zasm
                 if (condtree.kind != DTKind.CONDITION
                     || immtree.kind != DTKind.IMM)
                 {
-                    EvalErr();
+                    return EvalErr();
                 }
 
                 int cond = (int)((ConditionTree)condtree).cond;
@@ -451,19 +473,21 @@ namespace Zasm
             }
             else
             {
-                EvalErr();
+                return EvalErr();
             }
+
+            return true;
         }
 
         /*
          * PUSH and POP follow the same argument format but
          * have different offsets.
          */
-        private void EvalPUSHPOP(DTree argv, int argc, int basecode)
+        private bool EvalPUSHPOP(DTree argv, int argc, int basecode)
         {
             if (argc != 1)
             {
-                EvalErr();
+                return EvalErr();
             }
 
             DTree arg = argv;
@@ -473,7 +497,7 @@ namespace Zasm
                     NormPair npair = ((NormPairTree)arg).normpair;
                     if (npair == NormPair.SP)
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     else { code.Add((byte)(basecode | ((int)npair) << 4)); }
                     break;
@@ -481,7 +505,7 @@ namespace Zasm
                     SpecPair spair = ((SpecPairTree)arg).specpair;
                     if (spair != SpecPair.AF)
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     else { code.Add((byte)(basecode | 0x30)); }
                     break;
@@ -495,15 +519,16 @@ namespace Zasm
                     code.Add((byte)(basecode | 0x20));
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
-        private void EvalADD(DTree argv, int argc)
+        private bool EvalADD(DTree argv, int argc)
         {
             if (argc != 2)
-            { EvalErr(); }
+            { return EvalErr(); }
 
             DTree arg1 = argv, arg2 = argv.next;
             int pair, pair2, reg, reg2;
@@ -517,7 +542,7 @@ namespace Zasm
 
                     if (pair != (int)NormPair.HL
                         || arg2.kind != DTKind.NORMPAIR)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     pair2 = (int)((NormPairTree)arg2).normpair;
 
@@ -528,7 +553,7 @@ namespace Zasm
                     reg = (int)((RegTree)arg1).reg;
 
                     if (reg != (int)Register.A)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     switch (arg2.kind)
                     {
@@ -571,11 +596,11 @@ namespace Zasm
                                 && data.kind == DTKind.NORMPAIR)
                             {
                                 if (data.rep != (int)NormPair.HL) 
-                                { EvalErr(); }
+                                { return EvalErr(); }
 
                                 code.Add(0x86);
                             }
-                            else { EvalErr(); }
+                            else { return EvalErr(); }
 
                             break;
                         case DTKind.IMM:
@@ -585,8 +610,7 @@ namespace Zasm
                             code.Add((byte)imm);
                             break;
                         default:
-                            EvalErr();
-                            break;
+                            return EvalErr();
                     }
                     break;
                 case DTKind.IPAIR:
@@ -601,7 +625,7 @@ namespace Zasm
                     {
                         pair2 = (int)((NormPairTree)arg2).normpair;
 
-                        if (pair2 == (int)NormPair.HL) { EvalErr(); }
+                        if (pair2 == (int)NormPair.HL) { return EvalErr(); }
 
                         code.Add((byte)(0x9 | pair2 << 4));
                     }
@@ -610,16 +634,17 @@ namespace Zasm
                         bool sameIPair = 
                             ipair == ((IPairTree)arg2).ipair;
 
-                        if (!sameIPair) { EvalErr(); }
+                        if (!sameIPair) { return EvalErr(); }
 
                         code.Add(0x29);
                     }
 
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
         /*
@@ -627,9 +652,9 @@ namespace Zasm
          *  of encoding. They only have different
          *  offsets.
          */
-        private void EvalArithC(DTree argv, int argc, int npaircode, int regcode)
+        private bool EvalArithC(DTree argv, int argc, int npaircode, int regcode)
         {
-            if (argc != 2) { EvalErr(); }
+            if (argc != 2) { return EvalErr(); }
 
             DTree arg1 = argv, arg2 = argv.next;
 
@@ -638,7 +663,7 @@ namespace Zasm
                 case DTKind.NORMPAIR:
                     if (((NormPairTree)arg1).normpair != NormPair.HL
                         || arg2.kind != DTKind.NORMPAIR) 
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     int pair = (int)((NormPairTree)arg2).normpair;
                     code.Add(0xED);
@@ -646,7 +671,7 @@ namespace Zasm
 
                     break;
                 case DTKind.REG:
-                    if(((RegTree)arg1).reg != Register.A) { EvalErr(); }
+                    if(((RegTree)arg1).reg != Register.A) { return EvalErr(); }
 
                     switch (arg2.kind)
                     {
@@ -673,7 +698,7 @@ namespace Zasm
                             else if (data.hasDisplacement
                                      || data.kind != DTKind.NORMPAIR
                                      || data.rep != (int)NormPair.HL)
-                            { EvalErr(); }
+                            { return EvalErr(); }
 
                             code.Add((byte)(regcode | 6));
                             break;
@@ -697,14 +722,14 @@ namespace Zasm
                             code.Add((byte)imm);
                             break;
                         default:
-                            EvalErr();
-                            break;
+                            return EvalErr();
                     }
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
         /*
@@ -712,9 +737,9 @@ namespace Zasm
          * format of encoding. They only have different
          * offsets.
          */
-        private void EvalArith(DTree argv, int argc, int basecode)
+        private bool EvalArith(DTree argv, int argc, int basecode)
         {
-            if (argc != 1) { EvalErr(); }
+            if (argc != 1) { return EvalErr(); }
 
             DTree arg = argv;
 
@@ -758,7 +783,7 @@ namespace Zasm
                     else if (data.hasDisplacement
                         || data.kind != DTKind.NORMPAIR
                         || data.rep != (int)NormPair.HL)
-                    { EvalErr(); }
+                    { return EvalErr(); }
 
                     code.Add((byte)(basecode | 6));
                     break;
@@ -769,9 +794,10 @@ namespace Zasm
                     code.Add((byte)imm);
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
         /*
@@ -779,7 +805,7 @@ namespace Zasm
          * the same format of encoding. They only have
          * different offsets.
          */
-        private void EvalRotShift(DTree argv, int argc, int basecode)
+        private bool EvalRotShift(DTree argv, int argc, int basecode)
         {
             if (argc == 1)
             {
@@ -801,7 +827,7 @@ namespace Zasm
                         if (data.rep == (int)IPair.IX)
                         { code.Add(0xDD); }
                         else
-                        { code.Add(0xFD); }
+                        { code.Add(0xFD);  }
 
                         int disp = data.hasDisplacement ?
                                    0 : data.displacement;
@@ -813,27 +839,27 @@ namespace Zasm
                     }
                     else if (!data.hasDisplacement && data.kind == DTKind.NORMPAIR)
                     {
-                        if (data.rep != (int)NormPair.HL) { EvalErr(); }
+                        if (data.rep != (int)NormPair.HL) { return EvalErr(); }
                         code.Add(0xCB);
                         code.Add((byte)(basecode | 6));
                     }
-                    else { EvalErr(); }
+                    else { return EvalErr(); }
                 }
                 else
-                { EvalErr(); }
+                { return EvalErr(); }
             }
             else if (argc == 2)
             {
                 DTree arg1 = argv, arg2 = argv.next;
 
                 if (arg1.kind != DTKind.ADR || arg2.kind != DTKind.REG)
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 AdrData data = new AdrData((AdrTree)arg1);
                 int reg = (int)((RegTree)arg2).reg;
 
                 if (data.kind != DTKind.IPAIR)
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 if (data.rep == (int)IPair.IX)
                 { code.Add(0xDD); }
@@ -849,23 +875,25 @@ namespace Zasm
                 code.Add((byte)disp);
                 code.Add((byte)(basecode | reg));
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+
+            return true;
         }
 
         /*
          *  BIT, SET, and RES all follow the same format of encoding.
          *  They only have different offsets
          */
-        private void EvalBit(DTree argv, int argc, int basecode)
+        private bool EvalBit(DTree argv, int argc, int basecode)
         {
             if (argc == 2)
             {
                 DTree arg1 = argv, arg2 = argv.next;
 
-                if (arg1.kind != DTKind.IMM) { EvalErr(); }
+                if (arg1.kind != DTKind.IMM) { return EvalErr(); }
 
                 int imm = ((ImmTree)arg1).immediate;
-                if (imm < 0 || imm > 7) { EvalErr(); }
+                if (imm < 0 || imm > 7) { return EvalErr(); }
 
                 if (arg2.kind == DTKind.REG)
                 {
@@ -896,14 +924,14 @@ namespace Zasm
                     else if (!data.hasDisplacement
                         && data.kind == DTKind.NORMPAIR)
                     {
-                        if (data.rep != (int)NormPair.HL) { EvalErr(); }
+                        if (data.rep != (int)NormPair.HL) { return EvalErr(); }
                         code.Add(0xCB);
                     }
-                    else { EvalErr(); }
+                    else { return EvalErr(); }
 
                     code.Add((byte)(basecode | imm << 3 | 6));
                 }
-                else { EvalErr(); }
+                else { return EvalErr(); }
             }
             else if (argc == 3)
             {
@@ -914,16 +942,16 @@ namespace Zasm
                 if (arg1.kind != DTKind.IMM
                     || arg2.kind != DTKind.ADR
                     || arg3.kind != DTKind.REG)
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 int imm = ((ImmTree)arg1).immediate;
                 AdrData data = new AdrData((AdrTree)arg2);
                 int reg = (int)((RegTree)arg3).reg;
 
-                if (imm < 0 || imm > 7) { EvalErr(); }
+                if (imm < 0 || imm > 7) { return EvalErr(); }
 
                 if (data.kind != DTKind.IPAIR) 
-                { EvalErr(); }
+                { return EvalErr(); }
 
                 if (data.rep == (int)IPair.IX) { code.Add(0xDD); }
                 else                           { code.Add(0xFD); }
@@ -937,16 +965,18 @@ namespace Zasm
                 code.Add((byte)disp);
                 code.Add((byte)(basecode | imm << 3 | reg));
             }
-            else { EvalErr(); }
+            else { return EvalErr(); }
+
+            return true;
         }
 
         /*
          * INC and DEC follow the same format of encoding
          * but with different offsets.
          */
-        private void EvalINCDEC(DTree argv, int argc, int pairbase, int regbase)
+        private bool EvalINCDEC(DTree argv, int argc, int pairbase, int regbase)
         {
-            if (argc != 1) { EvalErr(); }
+            if (argc != 1) { return EvalErr(); }
 
             DTree arg = argv;
 
@@ -998,24 +1028,25 @@ namespace Zasm
                     }
                     else if (!data.hasDisplacement && data.kind == DTKind.NORMPAIR)
                     {
-                        if (data.rep != (int)NormPair.HL) { EvalErr(); }
+                        if (data.rep != (int)NormPair.HL) { return EvalErr(); }
 
                         code.Add((byte)(regbase | 0x6 << 3));
                     }
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
         /* ... Putting the C in CISC */
 
-        private void EvalLD(DTree argv, int argc)
+        private bool EvalLD(DTree argv, int argc)
         {
             if (argc != 2)
             {
-                EvalErr();
+                return EvalErr();
             }
 
             DTree arg1 = argv, arg2 = argv.next;
@@ -1061,7 +1092,7 @@ namespace Zasm
                         }
                         else
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
                     }
                     else
@@ -1086,7 +1117,7 @@ namespace Zasm
                                 }
                                 else
                                 {
-                                    EvalErr();
+                                    return EvalErr();
                                 }
                             }
                             else if (arg2.kind == DTKind.IMM
@@ -1101,7 +1132,7 @@ namespace Zasm
                             }
                             else
                             {
-                                EvalErr();
+                                return EvalErr();
                             }
                         }
                         else if (data.kind == DTKind.IMM)
@@ -1125,7 +1156,7 @@ namespace Zasm
                                 else
                                 {
                                     code.Add(0xED);
-                                    code.Add((byte)(0x34 | pair << 4));
+                                    code.Add((byte)(0x43 | pair << 4));
                                 }
                             }
                             else if (arg2.kind == DTKind.IPAIR)
@@ -1148,7 +1179,7 @@ namespace Zasm
                         }
                         else
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
                     }
 
@@ -1167,7 +1198,7 @@ namespace Zasm
                         imm = (int)((ImmTree)arg2).immediate;
                         if (imm > 255 || imm < -128)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
                         code.Add((byte)(0x6 | reg1 << 3));
                         code.Add((byte)imm);
@@ -1180,7 +1211,7 @@ namespace Zasm
                         {
                             if (data.hasDisplacement)
                             {
-                                EvalErr();
+                                return EvalErr();
                             }
 
                             NormPair npair = (NormPair)data.rep;
@@ -1200,7 +1231,7 @@ namespace Zasm
                             int immediate = data.rep;
                             if (reg1 != (int)Register.A)
                             {
-                                EvalErr();
+                                return EvalErr();
                             }
                             Imm16WarnOverflow(immediate);
                             code.Add(0x3A);
@@ -1232,9 +1263,10 @@ namespace Zasm
                     {
                         ireg = ((IRegTree)arg2).reg;
 
-                        if (reg1 > (int)Register.E)
+                        if (reg1 > (int)Register.E
+                            && reg1 != (int)Register.A)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         switch (ireg)
@@ -1265,7 +1297,7 @@ namespace Zasm
 
                         if (reg1 != (int)Register.A)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         code.Add(0xED);
@@ -1276,7 +1308,7 @@ namespace Zasm
                     }
                     else
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     break;
                 case DTKind.NORMPAIR:
@@ -1287,7 +1319,7 @@ namespace Zasm
 
                         if (data.kind != DTKind.IMM)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         if (pair == (int)NormPair.HL)
@@ -1297,7 +1329,7 @@ namespace Zasm
                         else
                         {
                             code.Add(0xED);
-                            code.Add((byte)(0x4A | pair << 4));
+                            code.Add((byte)(0x4B | pair << 4));
                         }
                     }
                     else if (arg2.kind == DTKind.IMM)
@@ -1313,7 +1345,7 @@ namespace Zasm
                         ipair = ((IPairTree)arg2).ipair;
                         if (pair != (int)NormPair.SP)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         if (ipair == IPair.IX)
@@ -1328,7 +1360,7 @@ namespace Zasm
                         }
                         else
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
                     }
                     else if (arg2.kind == DTKind.NORMPAIR)
@@ -1336,13 +1368,13 @@ namespace Zasm
                         if (pair != (int)NormPair.SP
                             || ((NormPairTree)arg2).normpair
                                != NormPair.HL)
-                        { EvalErr(); }
+                        { return EvalErr(); }
 
                         code.Add(0xF9);
                     }
                     else
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     break;
                 case DTKind.IPAIR:
@@ -1370,7 +1402,7 @@ namespace Zasm
 
                         if (data.kind != DTKind.IMM)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         imm = data.rep;
@@ -1384,7 +1416,7 @@ namespace Zasm
                     }
                     else
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     break;
                 case DTKind.IREG:
@@ -1420,7 +1452,7 @@ namespace Zasm
                         if (reg == (int)Register.H
                             || reg == (int)Register.L)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
                         else
                         {
@@ -1450,7 +1482,7 @@ namespace Zasm
                         if (iregIsIX && !ireg2IsIX
                             || !iregIsIX && ireg2IsIX)
                         {
-                            EvalErr();
+                            return EvalErr();
                         }
 
                         switch (ireg2)
@@ -1467,7 +1499,7 @@ namespace Zasm
                     }
                     else
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     break;
                 case DTKind.SPECREG:
@@ -1475,7 +1507,7 @@ namespace Zasm
                     if (arg2.kind != DTKind.REG
                         || ((RegTree)arg2).reg != Register.A)
                     {
-                        EvalErr();
+                        return EvalErr();
                     }
                     code.Add(0xED);
                     if (sreg == SpecReg.I)
@@ -1484,19 +1516,20 @@ namespace Zasm
                     { code.Add(0x4F); }
                     break;
                 default:
-                    EvalErr();
-                    break;
+                    return EvalErr();
             }
+
+            return true;
         }
 
-        public void Evaluate(InstructionTree inst)
+        public bool Evaluate(InstructionTree inst)
         {
             int argc = 0;
             NmemonicTree nmemonic = (NmemonicTree)inst.children;
 
             code = new List<byte>();
 
-            if (nmemonic == null) return;
+            if (nmemonic == null) return true;
 
             DTree arguments = nmemonic.next;
             DTree currchild = nmemonic.next;
@@ -1510,158 +1543,211 @@ namespace Zasm
             switch (nmemonic.nmemonic)
             {
                 case Nmemonic.NOP:
-                    EvalNoArgs(argc, 0x0);
-                    break;
+                    return EvalNoArgs(argc, 0x0);
+
                 case Nmemonic.HALT:
-                    EvalNoArgs(argc, 0x76);
-                    break;
+                    return EvalNoArgs(argc, 0x76);
+
                 case Nmemonic.RLCA:
-                    EvalNoArgs(argc, 0x07);
-                    break;
+                    return EvalNoArgs(argc, 0x07);
+
                 case Nmemonic.RRCA:
-                    EvalNoArgs(argc, 0x0F);
-                    break;
+                    return EvalNoArgs(argc, 0x0F);
+
                 case Nmemonic.RLA:
-                    EvalNoArgs(argc, 0x17);
-                    break;
+                    return EvalNoArgs(argc, 0x17);
+
                 case Nmemonic.RRA:
-                    EvalNoArgs(argc, 0x1F);
-                    break;
+                    return EvalNoArgs(argc, 0x1F);
+
                 case Nmemonic.DI:
-                    EvalNoArgs(argc, 0xF3);
-                    break;
+                    return EvalNoArgs(argc, 0xF3);
+
                 case Nmemonic.EI:
-                    EvalNoArgs(argc, 0xFB);
-                    break;
+                    return EvalNoArgs(argc, 0xFB);
+
                 case Nmemonic.PUSH:
-                    EvalPUSHPOP(arguments, argc, 0xC5);
-                    break;
+                    return EvalPUSHPOP(arguments, argc, 0xC5);
+
                 case Nmemonic.POP:
-                    EvalPUSHPOP(arguments, argc, 0xC1);
-                    break;
+                    return EvalPUSHPOP(arguments, argc, 0xC1);
+
                 case Nmemonic.LD:
-                    EvalLD(arguments, argc);
-                    break;
+                    return EvalLD(arguments, argc);
+
                 case Nmemonic.CP:
-                    EvalArith(arguments, argc, 0xB8);
-                    break;
+                    return EvalArith(arguments, argc, 0xB8);
+
                 case Nmemonic.OR:
-                    EvalArith(arguments, argc, 0xB0);
-                    break;
+                    return EvalArith(arguments, argc, 0xB0);
+
                 case Nmemonic.XOR:
-                    EvalArith(arguments, argc, 0xA8);
-                    break;
+                    return EvalArith(arguments, argc, 0xA8);
+
                 case Nmemonic.SUB:
-                    EvalArith(arguments, argc, 0x90);
-                    break;
+                    return EvalArith(arguments, argc, 0x90);
+
                 case Nmemonic.ADD:
-                    EvalADD(arguments, argc);
-                    break;
+                    return EvalADD(arguments, argc);
+
                 case Nmemonic.AND:
-                    EvalArith(arguments, argc, 0xA0);
-                    break;
+                    return EvalArith(arguments, argc, 0xA0);
+
                 case Nmemonic.ADC:
-                    EvalArithC(arguments, argc, 0x4A, 0x88);
-                    break;
+                    return EvalArithC(arguments, argc, 0x4A, 0x88);
+
                 case Nmemonic.SBC:
-                    EvalArithC(arguments, argc, 0x42, 0x98);
-                    break;
+                    return EvalArithC(arguments, argc, 0x42, 0x98);
+
                 case Nmemonic.RLC:
-                    EvalRotShift(arguments, argc, 0);
-                    break;
+                    return EvalRotShift(arguments, argc, 0);
+
                 case Nmemonic.RRC:
-                    EvalRotShift(arguments, argc, 0x8);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x8);
+
                 case Nmemonic.RL:
-                    EvalRotShift(arguments, argc, 0x10);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x10);
+
                 case Nmemonic.RR:
-                    EvalRotShift(arguments, argc, 0x18);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x18);
+
                 case Nmemonic.SLA:
-                    EvalRotShift(arguments, argc, 0x20);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x20);
+
                 case Nmemonic.SRA:
-                    EvalRotShift(arguments, argc, 0x28);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x28);
+
                 case Nmemonic.SLL:
-                    EvalRotShift(arguments, argc, 0x30);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x30);
+
                 case Nmemonic.SRL:
-                    EvalRotShift(arguments, argc, 0x40);
-                    break;
+                    return EvalRotShift(arguments, argc, 0x40);
+
                 case Nmemonic.BIT:
-                    EvalBit(arguments, argc, 0x40);
-                    break;
+                    return EvalBit(arguments, argc, 0x40);
+
                 case Nmemonic.RES:
-                    EvalBit(arguments, argc, 0x80);
-                    break;
+                    return EvalBit(arguments, argc, 0x80);
+
                 case Nmemonic.SET:
-                    EvalBit(arguments, argc, 0xC0);
-                    break;
+                    return EvalBit(arguments, argc, 0xC0);
+
                 case Nmemonic.DAA:
-                    EvalNoArgs(argc, 0x27);
-                    break;
+                    return EvalNoArgs(argc, 0x27);
+
                 case Nmemonic.CCF:
-                    EvalNoArgs(argc, 0x3F);
-                    break;
+                    return EvalNoArgs(argc, 0x3F);
+
                 case Nmemonic.CPL:
-                    EvalNoArgs(argc, 0x2F);
-                    break;
+                    return EvalNoArgs(argc, 0x2F);
+
                 case Nmemonic.SCF:
-                    EvalNoArgs(argc, 0x37);
-                    break;
+                    return EvalNoArgs(argc, 0x37);
+
                 case Nmemonic.EXX:
-                    EvalNoArgs(argc, 0xD9);
-                    break;
+                    return EvalNoArgs(argc, 0xD9);
+
                 case Nmemonic.JR:
-                    EvalJR(arguments, argc);
-                    break;
+                    return EvalJR(arguments, argc);
+
                 case Nmemonic.DJNZ:
-                    EvalDJNZ(arguments, argc);
-                    break;
+                    return EvalDJNZ(arguments, argc);
+
                 case Nmemonic.JP:
-                    EvalJP(arguments, argc);
-                    break;
+                    return EvalJP(arguments, argc);
+
                 case Nmemonic.LDI:
-                    EvalNoArgsED(argc, 0xA0);
-                    break;
+                    return EvalNoArgsED(argc, 0xA0);
+
+                case Nmemonic.CPI:
+                    return EvalNoArgsED(argc, 0xA1);
+
+                case Nmemonic.INI:
+                    return EvalNoArgsED(argc, 0xA2);
+
+                case Nmemonic.OUTI:
+                    return EvalNoArgsED(argc, 0xA3);
+
+                case Nmemonic.LDIR:
+                    return EvalNoArgsED(argc, 0xB0);
+
+                case Nmemonic.CPIR:
+                    return EvalNoArgsED(argc, 0xB1);
+
+                case Nmemonic.INIR:
+                    return EvalNoArgsED(argc, 0xB2);
+
+                case Nmemonic.OTIR:
+                    return EvalNoArgsED(argc, 0xB3);
+
+                case Nmemonic.LDD:
+                    return EvalNoArgsED(argc, 0xA8);
+
+                case Nmemonic.CPD:
+                    return EvalNoArgsED(argc, 0xA9);
+
+                case Nmemonic.IND:
+                    return EvalNoArgsED(argc, 0xAA);
+
+                case Nmemonic.OUTD:
+                    return EvalNoArgsED(argc, 0xAB);
+
+                case Nmemonic.LDDR:
+                    return EvalNoArgsED(argc, 0xB8);
+
+                case Nmemonic.CPDR:
+                    return EvalNoArgsED(argc, 0xB9);
+
+                case Nmemonic.INDR:
+                    return EvalNoArgsED(argc, 0xBA);
+
+                case Nmemonic.OTDR:
+                    return EvalNoArgsED(argc, 0xBB);
+
                 case Nmemonic.RET:
-                    EvalRET(arguments, argc);
-                    break;
+                    return EvalRET(arguments, argc);
+
                 case Nmemonic.RETI:
-                    EvalNoArgsED(argc, 0x4D);
-                    break;
+                    return EvalNoArgsED(argc, 0x4D);
+
                 case Nmemonic.CALL:
-                    EvalCALL(arguments, argc);
-                    break;
+                    return EvalCALL(arguments, argc);
+
                 case Nmemonic.INC:
-                    EvalINCDEC(arguments, argc, 0x3, 0x4);
-                    break;
+                    return EvalINCDEC(arguments, argc, 0x3, 0x4);
+
                 case Nmemonic.DEC:
-                    EvalINCDEC(arguments, argc, 0xB, 0x5);
-                    break;
+                    return EvalINCDEC(arguments, argc, 0xB, 0x5);
+
                 case Nmemonic.RST:
-                    EvalRST(arguments, argc);
-                    break;
+                    return EvalRST(arguments, argc);
+
                 case Nmemonic.EX:
-                    EvalEX(arguments, argc);
-                    break;
+                    return EvalEX(arguments, argc);
+
                 case Nmemonic.OUT:
-                    EvalOUT(arguments, argc);
-                    break;
+                    return EvalOUT(arguments, argc);
+
                 case Nmemonic.IN:
-                    EvalIN(arguments, argc);
-                    break;
+                    return EvalIN(arguments, argc);
+
                 case Nmemonic.IM:
-                    EvalIM(arguments, argc);
-                    break;
-                default:
-                    Console.Error.WriteLine("NOT IMPLEMENTED");
-                    Console.ReadKey();
-                    Environment.Exit(-1);
-                    break;
+                    return EvalIM(arguments, argc);
+
+                case Nmemonic.RETN:
+                    return EvalNoArgsED(argc, 0x45);
+
+                case Nmemonic.NEG:
+                    return EvalNoArgsED(argc, 0x44);
+
+                case Nmemonic.RRD:
+                    return EvalNoArgsED(argc, 0x67);
+
+                case Nmemonic.RLD:
+                    return EvalNoArgsED(argc, 0x6F);
             }
+
+            return false;
         }
     }
 }

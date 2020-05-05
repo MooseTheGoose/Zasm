@@ -67,13 +67,39 @@ namespace Zasm
     {
         public int number;
 
-        public NumberToken(string number)
+        public bool FormNumberToken(string number)
         {
             this.id = TokenKind.NUMBER;
-            if (!int.TryParse(number, out this.number))
+            int imm = 0;
+            int nbase = 10;
+            char currC = number[0];
+            int i = 0;
+            int len = number.Length;
+
+            if (currC == '0')
             {
-                TokenErr();
+                currC = number[1];
+                if (currC == 'x') { nbase = 16; }
+                else if(currC == 'o') { nbase = 8; }
+                i = 2;
             }
+
+            while (i < len)
+            {
+                currC = char.ToUpper(number[i]);
+                int digit = char.IsDigit(currC) ? currC - '0' : currC - 'A';
+
+                if (digit < 0 || digit >= nbase) { return TokenErr(); }
+
+                imm *= nbase;
+                imm += digit;
+
+                i++;
+            }
+
+            this.number = imm;
+
+            return true;
         }
     }
 
@@ -87,7 +113,7 @@ namespace Zasm
             return c >= 'a' && c <= 'z';
         }
 
-        public void Tokenize(string line)
+        public bool Tokenize(string line)
         {
             int i = 0;
             int len = line.Length;
@@ -139,6 +165,18 @@ namespace Zasm
                 /* Token is a number */
                 else if (char.IsDigit(currC))
                 {
+                    if (currC == '0' && i < len - 1)
+                    {
+                        char basec = char.ToLower(line[i + 1]);
+
+                        if (basec == 'x' || basec == 'o') 
+                        { 
+                            i += 2;
+                            if (i >= len || !char.IsDigit(line[i])) 
+                            { return TokenErr(); }
+                        }
+                    }
+
                     do
                     {
                         currC = line[i];
@@ -149,11 +187,15 @@ namespace Zasm
                     }
                     while (i < len);
 
-                    tokens.Add(
-                        new NumberToken(
-                            line.Substring(start, i-start)
-                            )
-                        );
+                    NumberToken num = new NumberToken();
+                    if (!num.FormNumberToken(
+                        line.Substring(start, i - start)
+                        ))
+                    {
+                        return false;
+                    }
+
+                    tokens.Add(num);
                 }
 
                 /* Token is operator */
@@ -166,9 +208,11 @@ namespace Zasm
                 }
                 else
                 {
-                    TokenErr();
+                    return TokenErr();
                 }
             }
+
+            return true;
         }
     }
 }

@@ -1,0 +1,57 @@
+IN B, (C)
+OUT (C), B
+SBC HL, BC
+LD (0), BC
+NEG
+RETN
+IM 0
+LD I, A
+IN C, (C)
+OUT (C), C
+ADC HL, BC
+LD BC, (0)
+RETI
+LD R, A
+IN D, (C)
+OUT (C), D
+SBC HL, DE
+LD (0), DE
+IM 1
+LD A, I
+IN E, (C)
+OUT (C), E
+ADC HL, DE
+LD DE, (0)
+LD A, R
+IN H, (C)
+OUT (C), H
+SBC HL, HL
+RRD
+IN L, (C)
+OUT (C), L
+ADC HL, HL
+RLD
+IN (C)
+OUT (C), 0
+SBC HL, SP
+LD (0), SP
+IN A, (C)
+OUT (C), A
+ADC HL, SP
+LD SP, (0)
+LDI
+CPI
+INI
+OUTI
+LDD
+CPD
+IND
+OUTD
+LDIR
+CPIR
+INIR
+OTIR
+LDDR
+CPDR
+INDR
+OTDR

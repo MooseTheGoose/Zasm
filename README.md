@@ -1,2 +1,2 @@
 # Zasm
-Toy Z80 assembler written in C#.
+Toy Z80 Instruction Evaluator written in C#.

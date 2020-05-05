@@ -55,6 +55,12 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="zasm_all_bit_ix_test.txt" />
+    <Content Include="zasm_all_bit_test.txt" />
+    <Content Include="zasm_bit_test.txt" />
+    <Content Include="zasm_ed_test.txt" />
+    <Content Include="zasm_ix_test.txt" />
+    <Content Include="zasm_iy_test.txt" />
     <Content Include="zasm_test.txt" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

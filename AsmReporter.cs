@@ -8,28 +8,25 @@ namespace Zasm
 {
     public static class AsmReporter
     {
-        public static void TokenErr()
+        public static bool TokenErr()
         {
             Console.Error.WriteLine("Error at line " + AsmVars.LineNo);
             Console.Error.WriteLine("Unidentifiable token");
-            Console.ReadKey();
-            Environment.Exit(1);
+            return false;
         }
 
-        public static void SyntaxErr()
+        public static bool SyntaxErr()
         {
             Console.Error.WriteLine("Error at line " + AsmVars.LineNo);
             Console.Error.WriteLine("Syntax Error");
-            Console.ReadKey();
-            Environment.Exit(1);
+            return false;
         }
 
-        public static void EvalErr()
+        public static bool EvalErr()
         {
             Console.Error.WriteLine("Error at line " + AsmVars.LineNo);
             Console.Error.WriteLine("Evaluation error");
-            Console.ReadKey();
-            Environment.Exit(1);
+            return false;
         }
 
         public static void Imm16WarnOverflow(int imm)

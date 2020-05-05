@@ -144,22 +144,22 @@ namespace Zasm
             InstructionTree i = new InstructionTree();
             InstructionEvaluator ieval = new InstructionEvaluator();
 
-            string[] lines = ReadFile("..\\..\\zasm_bit_test.txt");
+            string[] lines = ReadFile("..\\..\\practical_z80.txt");
 
             AsmVars.LineNo++;
             foreach (string line in lines)
             {
-                t.Tokenize(line);
-                i.Derive(t.tokens.ToArray());
+                if (!t.Tokenize(line)) { break; }
+                if(!i.Derive(t.tokens.ToArray())) { break; }
 
                 //DebugTree(i, 0);
 
-                ieval.Evaluate(i);
+                if(!ieval.Evaluate(i)) { break; }
+
                 foreach (byte b in ieval.code)
                 {
-                    Console.Write(String.Format("{0,0:X}", b) + " ");
+                    Console.Write(String.Format("{0,0:X2} ", b));
                 }
-                Console.WriteLine();
 
                 AsmVars.LineNo++;
             }
