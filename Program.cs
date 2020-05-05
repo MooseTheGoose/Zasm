@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace Zasm
 {
@@ -118,31 +119,50 @@ namespace Zasm
             }
         }
 
-        public static readonly string TestString = "RLC (IX+20)";
+        public static string[] ReadFile(string fname)
+        {
+            List<string> lines = new List<string>();
+
+            using (StreamReader sr = new StreamReader(fname))
+            {
+                string line = sr.ReadLine();
+
+                while (line != null)
+                {
+                    lines.Add(line);
+                    line = sr.ReadLine();
+                }
+            }
+
+            return lines.ToArray();
+        }
+
+        public static readonly string TestString = "DEC IY";
         static void Main(string[] args)
         {
             Tokenizer t = new Tokenizer();
             InstructionTree i = new InstructionTree();
             InstructionEvaluator ieval = new InstructionEvaluator();
 
-            t.Tokenize(TestString);
+            string[] lines = ReadFile("..\\..\\zasm_bit_test.txt");
 
-            foreach (Token s in t.tokens)
+            AsmVars.LineNo++;
+            foreach (string line in lines)
             {
-               DebugToken(s);
-            }
+                t.Tokenize(line);
+                i.Derive(t.tokens.ToArray());
 
-            AsmVars.TokenIndicies = t.indicies.ToArray();
-            AsmVars.CurLine = TestString;
-            i.Derive(t.tokens.ToArray());
-            DebugTree(i, 0);
+                //DebugTree(i, 0);
 
-            ieval.Evaluate(i);
-            foreach (byte b in ieval.code)
-            {
-                Console.Write(String.Format("{0,0:X}", b) + " ");
+                ieval.Evaluate(i);
+                foreach (byte b in ieval.code)
+                {
+                    Console.Write(String.Format("{0,0:X}", b) + " ");
+                }
+                Console.WriteLine();
+
+                AsmVars.LineNo++;
             }
-            Console.WriteLine();
 
             Console.ReadKey();
         }

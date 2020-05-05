@@ -1,0 +1,32 @@
+RLC B
+RRC B
+RL B
+RR B
+SLA B
+SRA B
+SLL B
+SRL B
+BIT 0, B
+BIT 1, B
+RLC C
+RLC D
+RLC E
+RLC H
+RLC L
+RLC (HL)
+RLC A
+RES 0, B
+SET 0, B
+SET 0, C
+SET 0, D
+SET 0, E
+SET 0, H
+SET 0, L
+SET 0, (HL)
+SET 0, A
+RLC (IX), B
+RRC (IX), B
+RL  (IX + 20), L
+BIT 0, (IX), B
+SLA (IX)
+RES 1, (IX)

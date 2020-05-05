@@ -260,7 +260,7 @@ namespace Zasm
         JP = 48, JR = 49, DJNZ = 50, CALL = 51, RET = 52,
         RETI = 53, RETN = 54, RST = 55, IN = 56, INI = 57,
         INIR = 58, IND = 59, INDR = 60, OUT = 61, OUTI = 62,
-        OUTIR = 63, OUTD = 64, OUTDR = 65, CP = 66, SLL = 67
+        OUTIR = 63, OUTD = 64, OUTDR = 65, CP = 66, SLL = 67,
     };
 
     public class NmemonicTree : DTree
@@ -277,7 +277,12 @@ namespace Zasm
             "RLD", "RRD", "BIT", "SET", "RES", "JP", "JR",
             "DJNZ", "CALL", "RET", "RETI", "RETN", "RST",
             "IN", "INI", "INIR", "IND", "INDR", "OUT",
-            "OUTI", "OUTIR", "OUTD", "OUTDR", "CP", "SLL"
+            "OUTI", "OUTIR", "OUTD", "OUTDR", "CP", "SLL",
+        };
+
+        public static readonly string[] ConditionalNmemonics =
+        {
+            "JR", "JP", "RET", "CALL"
         };
 
         public Nmemonic nmemonic;
@@ -285,6 +290,11 @@ namespace Zasm
         public static bool IsNmemonic(string s)
         {
             return Array.IndexOf(NmemonicTable, s) >= 0;
+        }
+
+        public static bool IsConditionalNmemonic(string s)
+        {
+            return Array.IndexOf(ConditionalNmemonics, s) >= 0;
         }
 
         public NmemonicTree(string nmemonic)
@@ -406,6 +416,7 @@ namespace Zasm
         {
             DTree curchild = null, tempchild = null;
             Token curtoken;
+            string nmemonic = null;
             string iden;
             int i = 0;
 
@@ -426,6 +437,7 @@ namespace Zasm
                 children = new NmemonicTree(iden);
                 curchild = children;
                 i = 1;
+                nmemonic = iden;
             }
             else
             {
@@ -442,9 +454,24 @@ namespace Zasm
                     case TokenKind.IDENTIFIER:
                         iden = ((IdentifierToken)curtoken).identifier.ToUpper();
 
-
                         if (RegTree.IsReg(iden))
-                        { tempchild = new RegTree(iden); }
+                        {
+                            /* 
+                             * C is a register and also a condition.
+                             * To solve this ambiguity, if the nmemonic requires
+                             * a condition, it doesn't require a register, so create
+                             * a new register tree iff the nmemonic is not conditional.
+                             */
+                            if (NmemonicTree.IsConditionalNmemonic(nmemonic)
+                                && iden.Equals("C"))
+                            {
+                                tempchild = new ConditionTree("C");
+                            }
+                            else
+                            {
+                                tempchild = new RegTree(iden);
+                            }
+                        }
 
                         else if (NormPairTree.IsNormPair(iden))
                         { tempchild = new NormPairTree(iden); }

@@ -80,13 +80,6 @@ namespace Zasm
     public class Tokenizer
     {
         public List<Token> tokens;
-        public List<int> indicies;
-
-        public Tokenizer() 
-        {
-            tokens = new List<Token>();
-            indicies = new List<int>();
-        }
 
         public static bool IsAsciiLetter(char c)
         {
@@ -99,6 +92,8 @@ namespace Zasm
             int i = 0;
             int len = line.Length;
             string token;
+
+            tokens = new List<Token>();
 
             while (i < len)
             {
@@ -139,7 +134,6 @@ namespace Zasm
                             line.Substring(start, i - start)
                             )
                         );
-                    indicies.Add(start);
                 }
 
                 /* Token is a number */
@@ -160,7 +154,6 @@ namespace Zasm
                             line.Substring(start, i-start)
                             )
                         );
-                    indicies.Add(start);
                 }
 
                 /* Token is operator */
@@ -169,7 +162,6 @@ namespace Zasm
                           OperatorPrefix(line.Substring(i))) != null)
                 {
                     tokens.Add(new OperatorToken(token));
-                    indicies.Add(i);
                     i += token.Length;
                 }
                 else

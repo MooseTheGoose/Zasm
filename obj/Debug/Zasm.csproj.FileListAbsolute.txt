@@ -1,9 +1,3 @@
-C:/Users/s198/Zasm/bin/Debug/Zasm.exe.config
-C:/Users/s198/Zasm/bin/Debug/Zasm.exe
-C:/Users/s198/Zasm/bin/Debug/Zasm.pdb
-C:/Users/s198/Zasm/obj/Debug/Zasm.csprojAssemblyReference.cache
-C:/Users/s198/Zasm/obj/Debug/Zasm.exe
-C:/Users/s198/Zasm/obj/Debug/Zasm.pdb
 /Users/yoyomoose/Zasm/bin/Debug/Zasm.exe.config
 /Users/yoyomoose/Zasm/bin/Debug/Zasm.exe
 /Users/yoyomoose/Zasm/bin/Debug/Zasm.pdb
@@ -11,3 +5,9 @@ C:/Users/s198/Zasm/obj/Debug/Zasm.pdb
 /Users/yoyomoose/Zasm/obj/Debug/Zasm.csproj.CoreCompileInputs.cache
 /Users/yoyomoose/Zasm/obj/Debug/Zasm.exe
 /Users/yoyomoose/Zasm/obj/Debug/Zasm.pdb
+C:\Users\s198\Zasm\obj\Debug\Zasm.exe
+C:\Users\s198\Zasm\obj\Debug\Zasm.pdb
+C:\Users\s198\Zasm\bin\Debug\Zasm.exe.config
+C:\Users\s198\Zasm\bin\Debug\Zasm.exe
+C:\Users\s198\Zasm\bin\Debug\Zasm.pdb
+C:\Users\s198\Zasm\obj\Debug\Zasm.csprojAssemblyReference.cache
